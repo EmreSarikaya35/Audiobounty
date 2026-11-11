@@ -370,21 +370,14 @@ const CHANNEL_HTML = `<!doctype html>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>">
 <link rel="stylesheet" href="/style.css">
 <style>
-  main { max-width: 40rem; }
-  .profile { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 3rem 0 1.5rem; }
-  .profile img { width: 5.5rem; height: 5.5rem; border-radius: 50%; object-fit: cover; background: var(--fill); box-shadow: var(--shadow-sm); margin-bottom: 1rem; }
-  .profile h1 { font-size: clamp(1.75rem, 6vw, 2.25rem); letter-spacing: -.03em; font-weight: 750; line-height: 1.1; }
+  main { max-width: 52rem; }
+  .profile { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 2.5rem 0 2rem; }
+  .profile img { width: 5rem; height: 5rem; border-radius: 12px; object-fit: cover; background: var(--fill); box-shadow: var(--shadow-sm); margin-bottom: 1rem; }
+  .profile h1 { font-size: clamp(1.75rem, 6vw, 2.5rem); letter-spacing: -.03em; font-weight: 650; line-height: 1.1; }
   .profile p { margin: .5rem 0 0; color: var(--muted); max-width: 26rem; }
-  .profile .btn { margin-top: 1.1rem; border-radius: 99px; }
-  .list { background: var(--surface); box-shadow: var(--shadow-sm); border-radius: var(--radius); overflow: hidden; }
-  .item { display: flex; align-items: center; gap: .85rem; padding: .8rem 1rem; border-top: 1px solid var(--line); }
-  .item:first-child { border-top: 0; }
-  .item .play { flex: none; width: 2.5rem; min-height: 2.5rem; padding: 0; border-radius: 50%; font-size: .9rem; }
-  .item .play.on { background: var(--accent); color: var(--accent-ink); }
-  .item .info { flex: 1; min-width: 0; }
-  .item .title { display: flex; align-items: center; font-weight: 650; letter-spacing: -.01em; overflow-wrap: anywhere; }
-  .item .meta { color: var(--muted); font-size: .8125rem; }
-  .item .cost { flex: none; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .875rem; }
+  .profile .btn { margin-top: 1.1rem; }
+  .reward-head { padding-right: 0; }
+  .meta { color: var(--muted); font-size: .8125rem; }
   .made { display: block; text-align: center; margin-top: 2rem; color: var(--muted); font-size: .8125rem; }
 </style>
 </head>
@@ -399,7 +392,7 @@ const CHANNEL_HTML = `<!doctype html>
     <p id="lead" style="--i:2">Sounds you can play on stream with channel points.</p>
     <a class="btn primary" id="watch" style="--i:3" href="https://kick.com/%NAME%" rel="noopener">Watch on Kick</a>
   </div>
-  <div class="list" id="list"></div>
+  <div class="reward-grid" id="list"></div>
   <a class="made" href="/" id="made">Make your own sound list with AudioBounty</a>
   <nav class="legal-links" style="font-size:.8125rem"><a href="/legal#privacy" id="lPrivacy">Gizlilik</a><a href="/legal#cookies" id="lCookies">Çerezler</a></nav>
 </main>
@@ -429,13 +422,15 @@ const CHANNEL_HTML = `<!doctype html>
   list.innerHTML = data.rewards.length
     ? data.rewards.map((r, i) => {
         const meta = [r.sounds.length > 1 ? T(\`\${r.sounds.length} sounds, one at random\`, \`\${r.sounds.length} ses, rastgele biri\`) : '', r.tts ? T('Reads your message aloud', 'Mesajını sesli okur') : ''].filter(Boolean).join(' · ');
-        return \`<div class="item enter" style="--i:\${Math.min(i, 12)}">
-          <button class="play" type="button" data-i="\${i}" \${r.sounds.length ? '' : 'disabled'} aria-label="\${esc(T('Listen', 'Dinle'))}: \${esc(r.title)}">\${PLAY}</button>
-          <div class="info"><div class="title"><span class="dot" style="--c:\${esc(r.color || 'var(--muted)')}" aria-hidden="true"></span>\${esc(r.title)}</div>\${meta ? \`<div class="meta">\${esc(meta)}</div>\` : ''}</div>
-          <span class="cost">\${esc(r.cost)} \${esc(T('points', 'puan'))}</span>
-        </div>\`;
+        return \`<article class="reward enter" style="--c:\${esc(r.color || 'var(--muted)')};--i:\${Math.min(i, 12)}">
+          <button class="reward-main play" type="button" data-i="\${i}" \${r.sounds.length ? '' : 'disabled'} title="\${esc(T('Listen', 'Dinle'))}">
+            <span class="reward-head"><span class="reward-title">\${esc(r.title)}</span>\${meta ? \`<span class="meta">\${esc(meta)}</span>\` : ''}</span>
+            <span class="reward-cost">\${esc(r.cost)} <small>\${esc(T('points', 'puan'))}</small></span>
+            <span class="reward-play" aria-hidden="true">\${PLAY}</span>
+          </button>
+        </article>\`;
       }).join('')
-    : \`<div class="item"><div class="info meta">\${esc(T('No sounds yet.', 'Henüz ses yok.'))}</div></div>\`;
+    : \`<p class="empty">\${esc(T('No sounds yet.', 'Henüz ses yok.'))}</p>\`;
 
   // One sound at a time, trimmed like it plays on stream; a pool plays one at random.
   let audio = null, btn = null, timer = 0;
@@ -443,7 +438,7 @@ const CHANNEL_HTML = `<!doctype html>
     clearTimeout(timer);
     timer = 0;
     audio?.pause();
-    if (btn) { btn.innerHTML = PLAY; btn.classList.remove('on'); }
+    if (btn) { btn.querySelector('.reward-play').innerHTML = PLAY; btn.parentElement.classList.remove('playing'); }
     audio = btn = null;
   }
   list.addEventListener('click', (e) => {
@@ -457,8 +452,8 @@ const CHANNEL_HTML = `<!doctype html>
     audio = new Audio(s.url);
     if (s.start) audio.currentTime = s.start;
     btn = b;
-    b.innerHTML = STOP;
-    b.classList.add('on');
+    b.querySelector('.reward-play').innerHTML = STOP;
+    b.parentElement.classList.add('playing');
     audio.onended = stop;
     audio.onerror = stop;
     audio.onplaying = () => { if (s.end > s.start && !timer) timer = setTimeout(stop, (s.end - s.start) * 1000); };

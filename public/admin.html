@@ -16,37 +16,36 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>">
 <link rel="stylesheet" href="/style.css">
 <style>
-  main { max-width: 60rem; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-bottom: 1rem; }
   .stats div { background: var(--surface); box-shadow: var(--shadow-sm); border-radius: var(--radius); padding: .9rem 1rem; }
-  .stats b { display: block; font-size: 1.5rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stats b { display: block; font: 600 1.5rem/1.3 var(--mono); letter-spacing: -.03em; }
   .stats span { color: var(--muted); font-size: .8125rem; }
   .users { display: flex; flex-direction: column; gap: .5rem; margin-top: .75rem; }
-  .user { background: var(--surface-2); border-radius: 14px; padding: .75rem .9rem; display: grid; grid-template-columns: 2.5rem minmax(0,1fr) auto; gap: .75rem; align-items: center; }
+  .user { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); border-radius: var(--key); padding: .75rem .9rem; display: grid; grid-template-columns: 2.5rem minmax(0,1fr) auto; gap: .75rem; align-items: center; }
   .user.banned { opacity: .6; }
-  .user img { width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--fill); object-fit: cover; }
+  .user img { width: 2.5rem; height: 2.5rem; border-radius: 6px; background: var(--fill); object-fit: cover; }
   .user .title { font-weight: 500; letter-spacing: 0; overflow-wrap: anywhere; display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
   .user .meta { font-size: .8125rem; color: var(--muted); }
   .user .actions { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
   .quota { display: inline-flex; align-items: center; gap: .4rem; margin-top: .35rem; font-size: .8125rem; color: var(--muted); }
-  .quota input { width: 6.5rem; min-height: 2rem; padding: .25rem .5rem; font-size: .8125rem; background: var(--surface); }
+  .quota input { width: 6.5rem; min-height: 2rem; padding: .25rem .5rem; font-size: .8125rem; }
   .quota input.custom { border-color: var(--accent-text); }
-  .tag { font-size: .75rem; font-weight: 600; padding: .05rem .5rem; border-radius: 99px; background: var(--fill); color: var(--muted); }
+  .tag { font-size: .75rem; font-weight: 600; padding: .05rem .375rem; border-radius: 4px; background: var(--fill); color: var(--muted); }
   .tag.red { background: var(--danger-soft); color: var(--danger); }
   .tag.green { background: var(--accent-soft); color: var(--accent-text); }
   .tag.amber { background: var(--warn-soft); color: var(--warn); }
   .sys { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: .75rem 0; }
-  .sys div { background: var(--surface-2); border-radius: 12px; padding: .7rem .85rem; }
-  .sys b { display: block; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .sys div { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); border-radius: var(--key); padding: .7rem .85rem; }
+  .sys b { display: block; font: 600 .9375rem/1.5 var(--mono); }
   .sys span { color: var(--muted); font-size: .75rem; }
-  .health { display: inline-flex; align-items: center; gap: .4rem; font-size: .8125rem; font-weight: 600; padding: .15rem .65rem; border-radius: 99px; }
+  .health { display: inline-flex; align-items: center; gap: .4rem; font-size: .8125rem; font-weight: 600; }
   .health::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
-  .health.ok { color: var(--accent-text); background: var(--accent-soft); }
-  .health.warn { color: var(--warn); background: var(--warn-soft); }
+  .health.ok { color: var(--accent-text); }
+  .health.warn { color: var(--warn); }
   ul.errors { list-style: none; margin: 0; padding: 0; font-size: .8125rem; max-height: 14rem; overflow-y: auto; }
   ul.errors li { display: flex; gap: .75rem; padding: .4rem 0; border-top: 1px solid var(--line); }
   ul.errors li:first-child { border-top: 0; }
-  ul.errors time { color: var(--muted); flex: none; font-variant-numeric: tabular-nums; }
+  ul.errors time { color: var(--muted); flex: none; font-family: var(--mono); }
   ul.errors span { overflow-wrap: anywhere; }
   @media (max-width: 640px) {
     .stats { grid-template-columns: 1fr 1fr; }
@@ -63,7 +62,6 @@
   <symbol id="i-light" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
   <symbol id="i-dark" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
 </defs></svg>
-<script>try { if (localStorage.getItem('glass') === 'off') document.documentElement.classList.add('no-glass'); } catch {}</script>
 <main>
   <header class="top">
     <svg class="i mark" aria-hidden="true"><use href="#i-mark"/></svg>

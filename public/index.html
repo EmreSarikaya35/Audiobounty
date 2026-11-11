@@ -67,7 +67,6 @@
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M11.53 2.3a.53.53 0 0 1 .95 0l2.31 4.68a2.12 2.12 0 0 0 1.6 1.16l5.17.76a.53.53 0 0 1 .29.9l-3.74 3.64a2.12 2.12 0 0 0-.61 1.88l.88 5.14a.53.53 0 0 1-.77.56l-4.62-2.43a2.12 2.12 0 0 0-1.97 0L6.4 21.02a.53.53 0 0 1-.77-.56l.88-5.14a2.12 2.12 0 0 0-.61-1.88L2.16 9.8a.53.53 0 0 1 .29-.9l5.17-.76a2.12 2.12 0 0 0 1.6-1.16z"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
 </defs></svg>
-<script>try { if (localStorage.getItem('glass') === 'off') document.documentElement.classList.add('no-glass'); } catch {}</script>
 <main>
 
   <!-- Logged out -->
@@ -143,10 +142,16 @@
       <button class="primary small" id="repairBtn" data-i18n>Repair</button>
     </div>
 
-    <!-- Everything needed during a stream, always at the top -->
+    <!-- Everything needed during a stream on one row that stays at the top -->
     <section class="card statusbar" id="statusCard">
       <div class="status-line">
         <span id="obsStatus" class="status off"></span>
+        <button class="now-playing" type="button" id="queueOpen" hidden>
+          <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="np-text" id="nowPlaying"></span>
+          <span class="np-count" id="queueCount"></span>
+          <span class="chev" aria-hidden="true">›</span>
+        </button>
         <div class="status-actions">
           <button class="primary" id="copyOverlay" data-i18n>Copy OBS link</button>
           <button id="muteBtn" aria-pressed="false"></button>
@@ -159,22 +164,16 @@
           </div>
         </div>
       </div>
-      <button class="now-playing" type="button" id="queueOpen" hidden>
-        <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span class="np-text" id="nowPlaying"></span>
-        <span class="np-count" id="queueCount"></span>
-        <span class="chev" aria-hidden="true">›</span>
-      </button>
-      <details class="obs-help" id="obsHelp">
-        <summary data-i18n>How to add it to OBS</summary>
-        <ol class="steps">
-          <li data-i18n>Click <b>Copy OBS link</b> above. The link is personal, don't share it.</li>
-          <li data-i18n>In OBS, click <b>+</b> under <b>Sources</b> and choose <b>Browser</b>.</li>
-          <li data-i18n>Paste the link into the <b>URL</b> field and click <b>OK</b>.</li>
-          <li data-i18n>Tick <b>Control audio via OBS</b> to see the sound in the OBS mixer.</li>
-        </ol>
-      </details>
     </section>
+    <details class="obs-help" id="obsHelp">
+      <summary data-i18n>How to add it to OBS</summary>
+      <ol class="steps">
+        <li data-i18n>Click <b>Copy OBS link</b> above. The link is personal, don't share it.</li>
+        <li data-i18n>In OBS, click <b>+</b> under <b>Sources</b> and choose <b>Browser</b>.</li>
+        <li data-i18n>Paste the link into the <b>URL</b> field and click <b>OK</b>.</li>
+        <li data-i18n>Tick <b>Control audio via OBS</b> to see the sound in the OBS mixer.</li>
+      </ol>
+    </details>
 
     <section class="rewards">
       <div class="section-head">
@@ -638,12 +637,6 @@
       <button class="icon ghost" type="button" data-close data-i18n-label="Close"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button>
     </div>
     <div class="sheet-body">
-      <h3 class="group-title" data-i18n>Appearance</h3>
-      <div class="group">
-        <label class="check row-check"><span data-i18n>Liquid Glass effects</span><input type="checkbox" class="switch" role="switch" id="glassToggle"></label>
-        <p class="hint" data-i18n>Glass, light bending and lenses. Turn it off to save battery and keep older laptops cool.</p>
-      </div>
-
       <h3 class="group-title" data-i18n>Sound</h3>
       <div class="group">
         <div class="field">
@@ -862,10 +855,6 @@
     "Cookie choice saved": "Çerez tercihin kaydedildi",
     "Storage": "Depolama",
     "Appearance": "Görünüm",
-    "Liquid Glass effects": "Liquid Glass efektleri",
-    "Glass, light bending and lenses. Turn it off to save battery and keep older laptops cool.": "Cam, ışık kırılması ve mercekler. Pil tasarrufu için ve eski dizüstü bilgisayarlar ısınmasın diye kapatabilirsin.",
-    "Liquid Glass on": "Liquid Glass açık",
-    "Liquid Glass off": "Liquid Glass kapalı",
     "Statistics": "İstatistikler",
     "Sounds": "Sesler",
     "+ Add file": "+ Dosya ekle",
@@ -1164,8 +1153,8 @@
     promoSound.setAttribute('aria-label', t(promoSound.dataset.i18nLabel));
     promoSound.querySelector('use').setAttribute('href', promo.muted ? '#i-muted' : '#i-sound');
   });
-  // Sliders paint their filled part and place the glass thumb (the glass script below) from --pp, 0 to 1.
-  const syncRange = (el) => (el.closest('.range-wrap') || el).style.setProperty('--pp', (el.value - el.min) / (el.max - el.min || 1));
+  // Sliders paint their filled part from --pp, 0 to 1.
+  const syncRange = (el) => el.style.setProperty('--pp', (el.value - el.min) / (el.max - el.min || 1));
   document.addEventListener('input', (e) => { if (e.target.type === 'range') syncRange(e.target); });
   let lang = 'en';
   try { lang = localStorage.getItem('lang') || (navigator.language.startsWith('tr') ? 'tr' : 'en'); } catch {}
@@ -1336,7 +1325,7 @@
   lightQuery.addEventListener('change', () => { if (themePref === 'auto') setTheme('auto'); });
 
   // Sheets: one progress value p (0 closed, 1 open) per sheet, driven by a spring. Phones get a bottom sheet
-  // you can drag and flick away; wider screens get a panel that grows out of the button that opened it.
+  // you can drag and flick away; wider screens get a drawer that slides in from the right.
   const asSheet = matchMedia('(max-width: 640px)');
   const openSheets = [];
 
@@ -1355,9 +1344,8 @@
         panel.style.transform = `translateY(${(1 - v) * panel.offsetHeight}px)`;
         panel.style.filter = '';
       } else {
-        panel.style.opacity = c;
-        panel.style.transform = `scale(${0.82 + 0.18 * v})`;
-        panel.style.filter = c < 1 ? `blur(${(1 - c) * 10}px)` : ''; // materialize, not just fade
+        panel.style.opacity = 1;
+        panel.style.transform = `translateX(${(1 - c) * 100}%)`;
       }
     }
 
@@ -1379,8 +1367,6 @@
       dlg.showModal();
       openSheets.push(sheet);
       panel.style.transform = 'none';
-      const r = trigger?.getBoundingClientRect(), pr = panel.getBoundingClientRect();
-      panel.style.transformOrigin = r && !asSheet.matches ? `${r.left + r.width / 2 - pr.left}px ${r.top + r.height / 2 - pr.top}px` : '';
       set(0);
       animate(1);
     };
@@ -1651,6 +1637,9 @@
       if ($('editSheet').open) fillEdit();
     }
     $('addOpen').disabled = state.alerts.length >= state.limits.maxAlerts;
+    // The pad whose sound is playing on stream right now stays lit.
+    const live = state.queue.playing && state.alerts.find((a) => a.title === state.queue.playing.reward)?.id;
+    for (const pad of $('alerts').querySelectorAll('.reward')) pad.classList.toggle('playing', pad.dataset.id === live);
     firstRender = false;
   }
 
@@ -1680,18 +1669,15 @@
     const shown = showAllAlerts ? list : list.slice(0, LIST_PREVIEW);
     moreButton($('alertsMore'), list.length, showAllAlerts);
     $('alerts').innerHTML = shown.map((a, i) => {
-      const anim = isNew(a) ? ' enter' : revealFrom >= 0 && i >= revealFrom ? ` enter" style="--i:${i - revealFrom}` : '';
+      const delay = !isNew(a) && revealFrom >= 0 && i >= revealFrom ? `;--i:${i - revealFrom}` : '';
       const tags = [a.sounds.length > 1 ? icon('shuffle') + esc(t(`${a.sounds.length} sounds`)) : '', a.image ? icon('image') + esc(t('Image')) : '', a.tts ? icon('message') + esc(t('Reads messages')) : '', a.enabled === false ? esc(t('Paused')) : '', a.managed ? '' : t('Kick dashboard')].filter(Boolean);
-      return `<article class="reward${a.enabled === false ? ' off' : ''}${anim}" data-id="${a.id}">
-        <button class="reward-main" type="button" data-act="edit" aria-label="${esc(t('Edit'))}: ${esc(a.title)}">
-          <span class="reward-title"><span class="dot" style="--c:${esc(a.color || 'var(--muted)')}" aria-hidden="true"></span>${esc(a.title)}</span>
-          <span class="reward-cost">${esc(a.cost)} ${esc(t('points'))}</span>
-          ${tags.length ? `<span class="reward-tags">${tags.map((x) => `<span class="tag">${x}</span>`).join('')}</span>` : ''}
+      return `<article class="reward${a.enabled === false ? ' off' : ''}${isNew(a) || delay ? ' enter' : ''}" data-id="${a.id}" style="--c:${esc(a.color || 'var(--muted)')}${delay}">
+        <button class="reward-main" type="button" data-act="test" title="${esc(t('Test'))}">
+          <span class="reward-head"><span class="reward-title">${esc(a.title)}</span>${tags.length ? `<span class="reward-tags">${tags.map((x) => `<span class="tag">${x}</span>`).join('')}</span>` : ''}</span>
+          <span class="reward-cost">${esc(a.cost)} <small>${esc(t('points'))}</small></span>
+          <span class="reward-play" aria-hidden="true">${icon('play')}</span>
         </button>
-        <div class="reward-actions">
-          <button class="small" type="button" data-act="test">${icon('play')}${esc(t('Test'))}</button>
-          <button class="icon ghost" type="button" data-act="edit" aria-label="${esc(t('Edit'))}">${icon('more')}</button>
-        </div>
+        <button class="icon ghost reward-edit" type="button" data-act="edit" aria-label="${esc(t('Edit'))}: ${esc(a.title)}">${icon('more')}</button>
       </article>`;
     }).join('');
   }
@@ -2005,7 +1991,12 @@
     if (btn.dataset.act === 'add') return openAdd(btn);
     const id = btn.closest('[data-id]').dataset.id;
     if (btn.dataset.act === 'edit') return openEdit(id, btn);
-    if (btn.dataset.act === 'test') busy(btn, () => testAlert(me.alerts.find((x) => x.id === id)));
+    if (btn.dataset.act !== 'test' || btn.disabled) return;
+    // The pad lights up while the test is sent; a spinner would replace its face.
+    const pad = btn.closest('.reward');
+    btn.disabled = true;
+    pad.classList.add('firing');
+    testAlert(me.alerts.find((x) => x.id === id)).catch((err) => toast(err.message, true)).finally(() => { btn.disabled = false; pad.classList.remove('firing'); });
   });
 
   $('alertsMore').addEventListener('click', () => {
@@ -2151,13 +2142,6 @@
     toast(t(`Restored ${added} rewards, skipped ${skipped + failed.length}.`) + (failed.length ? ' ' + failed.join(' · ') : ''), Boolean(failed.length));
   }));
 
-  // Liquid Glass on/off; the glass script below applies it and remembers it like the theme.
-  $('glassToggle').checked = !document.documentElement.classList.contains('no-glass');
-  $('glassToggle').addEventListener('change', (e) => {
-    window.liquidGlass?.set(e.target.checked);
-    toast(e.target.checked ? 'Liquid Glass on' : 'Liquid Glass off');
-  });
-
   $('settingsOpen').addEventListener('click', (e) => {
     settingsSheet.open(e.currentTarget);
     for (const seg of document.querySelectorAll('[data-card]')) movePill(seg);
@@ -2295,7 +2279,7 @@
     if (!b) return;
     const v = b.dataset.consent;
     document.cookie = `consent=${v}; Path=/; Max-Age=15552000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
-    if (v === 'all') { savePref('lang', lang); savePref('theme', themePref); savePref('glass', document.documentElement.classList.contains('no-glass') ? 'off' : 'on'); }
+    if (v === 'all') { savePref('lang', lang); savePref('theme', themePref); }
     else try { localStorage.removeItem('lang'); localStorage.removeItem('theme'); localStorage.removeItem('glass'); } catch {}
     $('consent').hidden = true;
     if (v === 'none' && me) { // a session cookie is not allowed any more
@@ -2342,278 +2326,6 @@
       pollTimer = setTimeout(poll, 4000);
     }).catch(showLanding);
   }
-</script>
-<script>
-// Liquid Glass after Glisse: per-element displacement maps in an SVG backdrop filter (Chromium only) plus press,
-// lens and drag effects. The native controls stay underneath, so keyboard and screen readers work as before.
-(() => {
-  const NS = 'http://www.w3.org/2000/svg';
-  const refracts = CSS.supports('backdrop-filter', 'url(#x)') && !/Version\/[\d.]+.*Safari/.test(navigator.userAgent)
-    && !matchMedia('(prefers-reduced-transparency: reduce)').matches;
-  let svg = null, count = 0;
-  // Liquid Glass can be switched off in Settings (stored like the theme); the page sets .no-glass before it paints.
-  const glassOn = () => !document.documentElement.classList.contains('no-glass');
-
-  // Signed distance to a rounded rectangle centred on 0 with half-size hw x hh (negative inside).
-  const sdf = (x, y, hw, hh, r) => {
-    const qx = Math.abs(x) - hw + r, qy = Math.abs(y) - hh + r;
-    return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
-  };
-
-  // Red and green hold the x and y offset around 128. Near the rim (bezel px) the backdrop is pulled from further
-  // inside, like the curved edge of a lens; zoom > 1 also pulls the middle towards the centre, which magnifies it.
-  function displacementMap(w, h, r, bezel, zoom) {
-    const hw = w / 2, hh = h / 2;
-    r = Math.min(r, hw, hh);
-    const vx = new Float32Array(w * h), vy = new Float32Array(w * h);
-    let max = 1e-3;
-    for (let j = 0; j < h; j++) {
-      for (let i = 0; i < w; i++) {
-        const x = i + 0.5 - hw, y = j + 0.5 - hh, k = j * w + i;
-        let dx = -x * (1 - 1 / zoom), dy = -y * (1 - 1 / zoom);
-        const depth = -sdf(x, y, hw, hh, r);
-        if (depth < bezel) {
-          const nx = sdf(x + 1, y, hw, hh, r) - sdf(x - 1, y, hw, hh, r), ny = sdf(x, y + 1, hw, hh, r) - sdf(x, y - 1, hw, hh, r);
-          const len = Math.hypot(nx, ny) || 1, t = 1 - Math.max(depth, 0) / bezel, pull = t * t * bezel;
-          dx -= (nx / len) * pull;
-          dy -= (ny / len) * pull;
-        }
-        vx[k] = dx;
-        vy[k] = dy;
-        max = Math.max(max, Math.abs(dx), Math.abs(dy));
-      }
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const g = canvas.getContext('2d'), img = g.createImageData(w, h);
-    for (let k = 0; k < w * h; k++) {
-      img.data[k * 4] = 128 + (vx[k] / max) * 127;
-      img.data[k * 4 + 1] = 128 + (vy[k] / max) * 127;
-      img.data[k * 4 + 2] = 128;
-      img.data[k * 4 + 3] = 255;
-    }
-    g.putImageData(img, 0, 0);
-    return { href: canvas.toDataURL(), scale: max * 2 };
-  }
-
-  // One displacement per colour channel, each a little weaker than the last: the rim splits light like glass does.
-  function writeFilter(id, map, w, h, dispersion) {
-    if (!svg) {
-      svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('aria-hidden', 'true');
-      svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-      document.body.append(svg);
-    }
-    let f = document.getElementById(id);
-    if (!f) {
-      f = svg.appendChild(document.createElementNS(NS, 'filter'));
-      f.id = id;
-    }
-    const attrs = { x: 0, y: 0, width: w, height: h, filterUnits: 'userSpaceOnUse', primitiveUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' };
-    for (const [k, v] of Object.entries(attrs)) f.setAttribute(k, v);
-    const pick = ['1 0 0 0 0 0 0 0 0 0 0 0 0 0 0', '0 0 0 0 0 0 1 0 0 0 0 0 0 0 0', '0 0 0 0 0 0 0 0 0 0 0 0 1 0 0'];
-    f.innerHTML = `<feImage href="${map.href}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>`
-      + pick.map((m, c) => `<feDisplacementMap in="SourceGraphic" in2="map" scale="${map.scale * (1 - dispersion * c)}" xChannelSelector="R" yChannelSelector="G" result="ray${c}"/>`
-        + `<feColorMatrix in="ray${c}" type="matrix" values="${m} 0 0 0 1 0" result="ch${c}"/>`).join('')
-      + '<feComposite in="ch0" in2="ch1" operator="arithmetic" k2="1" k3="1" result="rg"/>'
-      + '<feComposite in="rg" in2="ch2" operator="arithmetic" k2="1" k3="1"/>';
-  }
-
-  // A backdrop-filter value that refracts a w x h glass shape, or null where SVG backdrop filters don't work.
-  const shapes = new Map();
-  function glassFilter(w, h, r, { bezel = 12, zoom = 1, dispersion = 0.04, before = 'blur(3px)', after = 'saturate(1.6)' } = {}) {
-    if (!refracts || w < 1 || h < 1) return null;
-    w = Math.round(w);
-    h = Math.round(h);
-    const key = [w, h, r, bezel, zoom, dispersion].join();
-    if (!shapes.has(key)) {
-      const id = `glass-${count++}`;
-      writeFilter(id, displacementMap(w, h, r, Math.min(bezel, w / 2, h / 2), zoom), w, h, dispersion);
-      shapes.set(key, id);
-    }
-    return `${before} url(#${shapes.get(key)}) ${after}`;
-  }
-
-  // Keeps an element's refraction matched to its size and shape.
-  const panes = [];
-  function refract(el, opts) {
-    if (!refracts) return;
-    const update = () => {
-      const value = glassOn() && glassFilter(el.offsetWidth, el.offsetHeight, parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, opts);
-      el.style.backdropFilter = el.style.webkitBackdropFilter = value || '';
-    };
-    panes.push(update);
-    new ResizeObserver(update).observe(el);
-    update();
-  }
-
-  const lensOpts = { bezel: 7, zoom: 1.45, dispersion: 0.06, before: 'blur(.4px)', after: 'saturate(1.5) brightness(1.05)' };
-
-  // Sliders and switches get a thumb element (a pseudo-element can't hold a lens of its own).
-  for (const input of document.querySelectorAll('input[type=range]:not(.trim input), input.switch')) {
-    const kind = input.type === 'range' ? 'range' : 'switch';
-    const wrap = document.createElement('span');
-    wrap.className = `${kind}-wrap`;
-    input.before(wrap);
-    wrap.append(input);
-    const thumb = document.createElement('span');
-    thumb.className = `${kind}-thumb`;
-    thumb.setAttribute('aria-hidden', 'true');
-    thumb.innerHTML = '<i></i>';
-    wrap.append(thumb);
-    if (kind === 'range') wrap.style.setProperty('--pp', (input.value - input.min) / (input.max - input.min || 1));
-    input.addEventListener('pointerdown', (e) => {
-      if (glassOn()) {
-        // The lens is only drawn while held (the CSS reads --lens), so a resting thumb costs nothing.
-        thumb.style.setProperty('--lens', glassFilter(thumb.offsetWidth, thumb.offsetHeight, 99, lensOpts) || '');
-        wrap.classList.add('lifted');
-      }
-      if (kind === 'switch' && !input.disabled) dragSwitch(e, input, wrap, thumb);
-    });
-    input.addEventListener('blur', () => wrap.classList.remove('lifted'));
-  }
-
-  // Switch thumbs follow the pointer while held; letting go settles on the nearer side. A drag decides the state
-  // itself, so the click that follows it (from the label or the input) is cancelled.
-  let cancelClick = false;
-  document.addEventListener('click', (e) => {
-    if (!cancelClick) return;
-    e.preventDefault();
-    e.stopPropagation();
-  }, true);
-  function dragSwitch(down, input, wrap, thumb) {
-    const travel = input.offsetWidth - thumb.offsetWidth - 4, from = input.checked ? travel : 0;
-    let x = from, moved = false;
-    const move = (e) => {
-      if (!moved && Math.abs(e.clientX - down.clientX) < 3) return;
-      moved = true;
-      x = Math.max(0, Math.min(travel, from + e.clientX - down.clientX));
-      wrap.classList.add('dragging');
-      wrap.style.setProperty('--t', x / travel);
-      thumb.style.transform = `translateX(${x}px)${glassOn() ? ' scale(1.5)' : ''}`;
-    };
-    const up = () => {
-      removeEventListener('pointermove', move);
-      removeEventListener('pointerup', up);
-      removeEventListener('pointercancel', up);
-      wrap.classList.remove('dragging', 'lifted');
-      thumb.style.transform = '';
-      if (!moved) return;
-      cancelClick = true;
-      setTimeout(() => { cancelClick = false; }); // the click, if any, comes in the same task as pointerup
-      const on = x > travel / 2;
-      if (on !== input.checked) {
-        input.checked = on;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    };
-    addEventListener('pointermove', move);
-    addEventListener('pointerup', up);
-    addEventListener('pointercancel', up);
-  }
-
-  // Buttons glow from the point that is pressed (the CSS reads --gx and --gy) and, while held, stretch towards the
-  // pointer like a drop of liquid; letting go springs them back. Rows, menu items and segments keep still.
-  const soft = (v) => v / (1 + Math.abs(v)); // keeps following the pointer, but less and less
-  document.addEventListener('pointerdown', (e) => {
-    const b = e.target.closest('button, .btn');
-    if (!b || e.button !== 0) return;
-    const r = b.getBoundingClientRect();
-    b.style.setProperty('--gx', `${e.clientX - r.left}px`);
-    b.style.setProperty('--gy', `${e.clientY - r.top}px`);
-    if (!glassOn() || b.disabled || b.matches('.seg button, .menu button, .reward-main, .activity, .now-playing, .wide-btn')) return;
-    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    const move = (ev) => {
-      const ex = soft((ev.clientX - cx) / (r.width / 2)), ey = soft((ev.clientY - cy) / (r.height / 2));
-      b.style.setProperty('--gx', `${ev.clientX - r.left}px`);
-      b.style.setProperty('--gy', `${ev.clientY - r.top}px`);
-      b.style.transition = 'transform 140ms cubic-bezier(.2,.9,.3,1), background-color 200ms';
-      // pulled towards the pointer: longer along the pull, thinner across it
-      b.style.transform = `translate(${ex * 16}px, ${ey * 10}px) scale(${1.07 + Math.abs(ex) * 0.3 - Math.abs(ey) * 0.1}, ${1.07 + Math.abs(ey) * 0.3 - Math.abs(ex) * 0.12})`;
-    };
-    const up = () => {
-      removeEventListener('pointermove', move);
-      removeEventListener('pointerup', up);
-      removeEventListener('pointercancel', up);
-      b.style.transition = '';
-      b.style.transform = '';
-    };
-    addEventListener('pointermove', move);
-    addEventListener('pointerup', up);
-    addEventListener('pointercancel', up);
-  }, true);
-
-  // Segmented controls: pressing lifts the selection pill (.seg::before) into a lens under the pointer; dragging
-  // moves it, and letting go over another option selects it. The page's own click handlers do the selecting.
-  let seg = null, startX = 0, moved = false;
-  const pillAt = (s, x) => {
-    const r = s.getBoundingClientRect(), w = parseFloat(s.style.getPropertyValue('--pill-w')) || r.width / s.querySelectorAll('button').length;
-    s.style.setProperty('--pill-x', `${Math.max(0, Math.min(r.width - w - 4, x - r.left - w / 2))}px`);
-  };
-  const optionAt = (s, x) => [...s.querySelectorAll('button')].find((b) => {
-    const r = b.getBoundingClientRect();
-    return x >= r.left && x <= r.right;
-  });
-  document.addEventListener('pointerdown', (e) => {
-    const s = e.target.closest('.seg');
-    if (!s || e.button !== 0 || !glassOn()) return;
-    seg = s;
-    startX = e.clientX;
-    moved = false;
-    const b = e.target.closest('button');
-    if (b) s.style.setProperty('--pill-w', `${b.offsetWidth}px`);
-    const lens = glassFilter(b?.offsetWidth || 0, s.offsetHeight - 4, 99, lensOpts);
-    if (lens) s.style.setProperty('--lens', lens);
-    s.classList.add('has-on', 'lifted');
-    pillAt(s, e.clientX);
-  });
-  addEventListener('pointermove', (e) => {
-    if (!seg) return;
-    if (Math.abs(e.clientX - startX) > 4) moved = true;
-    seg.classList.toggle('dragging', moved);
-    pillAt(seg, e.clientX);
-  });
-  const release = (e) => {
-    document.querySelectorAll('.lifted').forEach((w) => w.classList.remove('lifted'));
-    if (!seg) return;
-    const s = seg;
-    seg = null;
-    s.classList.remove('dragging');
-    const target = e.type === 'pointerup' && moved ? optionAt(s, e.clientX) : null;
-    // A tap is an ordinary click; a drag ends on another button, so no click fires and we send one.
-    if (target && !target.classList.contains('on')) target.click();
-    requestAnimationFrame(() => {
-      const on = s.querySelector('button.on');
-      s.classList.toggle('has-on', Boolean(on));
-      if (on) {
-        s.style.setProperty('--pill-x', `${on.offsetLeft - 2}px`);
-        s.style.setProperty('--pill-w', `${on.offsetWidth}px`);
-      }
-    });
-  };
-  addEventListener('pointerup', release);
-  addEventListener('pointercancel', release);
-
-  // Refraction is kept to a few small panes: every refracting pane is redrawn whenever what is behind it moves
-  // (scrolling, animations), so cards, rows and sheets use plain translucent glass instead.
-  document.querySelectorAll('header.top').forEach((el) => refract(el, { bezel: 16, before: 'blur(4px)', after: 'saturate(1.8)' }));
-  document.querySelectorAll('.statusbar .menu, #toast, .consent').forEach((el) => refract(el, { bezel: 14, before: 'blur(10px)', after: 'saturate(1.9)' }));
-
-  window.liquidGlass = {
-    get on() { return glassOn(); },
-    set(on) {
-      document.documentElement.classList.toggle('no-glass', !on);
-      // Saved only with full cookie consent, like the language and theme.
-      try {
-        if (/(?:^|; )consent=all/.test(document.cookie)) localStorage.setItem('glass', on ? 'on' : 'off');
-        else localStorage.removeItem('glass');
-      } catch {}
-      panes.forEach((update) => update());
-    },
-  };
-})();
 </script>
 </body>
 </html>
