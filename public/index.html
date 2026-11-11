@@ -666,6 +666,7 @@
         <div class="card-preview" id="cardPreview" aria-hidden="true">
           <div class="cp-card"><b>viewer42</b> <svg class="i" aria-hidden="true"><use href="#i-sound"/></svg> <span data-i18n>Air horn</span><p data-i18n>Hello stream</p></div>
         </div>
+        <button class="small" type="button" id="cardSample" data-i18n>Show a sample card in OBS</button>
         <label class="check row-check"><span data-i18n>Show who redeemed it on stream</span><input type="checkbox" class="switch" role="switch" id="card" data-setting="card"></label>
         <div class="inline-field"><span class="field-label" data-i18n>Position</span>
           <div class="seg" role="group" data-card="position"><button type="button" data-v="top" data-i18n>Top</button><button type="button" data-v="center" data-i18n>Middle</button><button type="button" data-v="bottom" data-i18n>Bottom</button></div></div>
@@ -880,6 +881,8 @@
     "Hello stream": "Selam yayın",
     "Position": "Konum",
     "Same as settings": "Ayarlardaki gibi",
+    "OBS is not connected.": "OBS bağlı değil.", "Play anyway": "Yine de çal",
+    "Show a sample card in OBS": "OBS'te örnek kart göster", "Sample card sent to OBS": "Örnek kart OBS'e gönderildi",
     "Make a pricey reward stand out with a bigger card or its own entrance.": "Pahalı bir ödülü daha büyük bir kartla ya da kendi girişiyle öne çıkar.",
     "Entrance": "Giriş", "Slide": "Kayarak", "Pop": "Büyüyerek", "Fade": "Belirerek",
     "Top": "Üst", "Middle": "Orta", "Bottom": "Alt",
@@ -1219,16 +1222,26 @@
     btn.addEventListener('click', () => toggleMenu(btn));
   }
 
-  function toast(msg, err) {
+  // action: { label, fn } adds a button to the toast, e.g. "Play anyway".
+  function toast(msg, err, action) {
     const el = $('toast');
     // Sheets are in the top layer; move the toast inside the topmost one so it isn't hidden underneath.
     const host = openSheets[openSheets.length - 1]?.dlg || document.body;
     if (el.parentElement !== host) host.append(el);
     el.textContent = t(msg);
+    el.classList.toggle('act', Boolean(action));
+    if (action) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'small';
+      b.textContent = t(action.label);
+      b.addEventListener('click', () => { el.classList.remove('show'); action.fn(); });
+      el.append(b);
+    }
     el.classList.toggle('err', Boolean(err));
     el.classList.add('show');
     clearTimeout(toast.t);
-    toast.t = setTimeout(() => el.classList.remove('show'), err ? 6000 : 3000);
+    toast.t = setTimeout(() => el.classList.remove('show'), err || action ? 6000 : 3000);
   }
 
   // Apple-style spring: damping ratio (1 = no overshoot) and response (seconds), mass 1.
@@ -1703,7 +1716,7 @@
     $('alerts').innerHTML = shown.map((a, i) => {
       const delay = !isNew(a) && revealFrom >= 0 && i >= revealFrom ? `;--i:${i - revealFrom}` : '';
       const tags = [a.sounds.length > 1 ? icon('shuffle') + esc(t(`${a.sounds.length} sounds`)) : '', a.image ? icon('image') + esc(t('Image')) : '', a.tts ? icon('message') + esc(t('Reads messages')) : '', a.enabled === false ? esc(t('Paused')) : '', a.managed ? '' : t('Kick dashboard')].filter(Boolean);
-      return `<article class="reward${a.enabled === false ? ' off' : ''}${isNew(a) || delay ? ' enter' : ''}" data-id="${a.id}" style="--c:${esc(a.color || 'var(--muted)')}${delay}">
+      return `<article class="reward${a.enabled === false ? ' off' : ''}${isNew(a) || delay ? ' enter' : ''}" draggable="true" data-id="${a.id}" style="--c:${esc(a.color || 'var(--muted)')}${delay}">
         <button class="reward-main" type="button" data-act="test" title="${esc(t('Test'))}">
           <span class="reward-head"><span class="reward-title">${esc(a.title)}</span>${tags.length ? `<span class="reward-tags">${tags.map((x) => `<span class="tag">${x}</span>`).join('')}</span>` : ''}</span>
           <span class="reward-cost">${esc(a.cost)} <small>${esc(t('points'))}</small>${a.count ? ` <small class="reward-count" title="${esc(t('Redemptions'))}">${esc(a.count)}×</small>` : ''}</span>
@@ -2017,9 +2030,51 @@
 
   async function testAlert(a) {
     const r = await api(`/api/alerts/${a.id}/test`, 'POST');
-    if (!r.overlays) toast('OBS is not connected. Add the link to OBS as a browser source.', true);
-    else toast(`Playing "${a.title}" in OBS`);
+    if (r.overlays) return toast(`Playing "${a.title}" in OBS`);
+    // Nothing reached the stream; offer to hear it here instead.
+    const s = a.sounds[Math.floor(Math.random() * a.sounds.length)];
+    if (s) toast('OBS is not connected.', false, { label: 'Play anyway', fn: () => previewSound(s, a) });
+    else toast('OBS is not connected. Add the link to OBS as a browser source.', true);
   }
+
+  // Reorder the pads: drag one onto another, or hold Alt and press the left or right arrow on a focused pad.
+  // shortcut: native drag and drop, which Firefox won't start from inside a button; use pointer events if that matters
+  let dragPad = null;
+  async function saveOrder(focusId) {
+    const ids = [...$('alerts').querySelectorAll('.reward')].map((el) => el.dataset.id);
+    ids.push(...me.alerts.map((a) => a.id).filter((id) => !ids.includes(id))); // the ones behind "Show all"
+    try { render(await api('/api/alerts/order', 'POST', { ids }), true); } catch (err) { toast(err.message, true); refresh(true); }
+    if (focusId) $('alerts').querySelector(`[data-id="${focusId}"] .reward-main`)?.focus();
+  }
+  $('alerts').addEventListener('dragstart', (e) => {
+    dragPad = e.target.closest('.reward');
+    if (!dragPad) return;
+    e.dataTransfer.effectAllowed = 'move';
+    dragPad.classList.add('dragging');
+  });
+  $('alerts').addEventListener('dragover', (e) => {
+    if (!dragPad) return;
+    e.preventDefault();
+    const over = e.target.closest('.reward');
+    if (!over || over === dragPad) return;
+    const r = over.getBoundingClientRect();
+    over[e.clientX > r.left + r.width / 2 ? 'after' : 'before'](dragPad);
+  });
+  $('alerts').addEventListener('dragend', () => {
+    if (!dragPad) return;
+    dragPad.classList.remove('dragging');
+    dragPad = null;
+    saveOrder();
+  });
+  $('alerts').addEventListener('keydown', (e) => {
+    const pad = e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.closest('.reward');
+    if (!pad) return;
+    e.preventDefault();
+    const other = e.key === 'ArrowLeft' ? pad.previousElementSibling : pad.nextElementSibling;
+    if (!other?.matches('.reward')) return;
+    other[e.key === 'ArrowLeft' ? 'before' : 'after'](pad);
+    saveOrder(pad.dataset.id);
+  });
 
   $('alerts').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-act]');
@@ -2179,6 +2234,11 @@
       ttsLang: st.ttsLang, bannedWords: (st.bannedWords || []).join(', '), favorites: st.favorites, publicPage: st.publicPage,
     }), true);
     toast(t(`Restored ${added} rewards, skipped ${skipped + failed.length}.`) + (failed.length ? ' ' + failed.join(' · ') : ''), Boolean(failed.length));
+  }));
+
+  $('cardSample').addEventListener('click', (e) => busy(e.currentTarget, async () => {
+    await api('/api/card-test', 'POST');
+    toast('Sample card sent to OBS');
   }));
 
   $('settingsOpen').addEventListener('click', (e) => {

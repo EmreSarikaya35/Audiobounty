@@ -37,6 +37,9 @@
   #card::after { opacity: .3; }
   #cardBar { transform-origin: left; }
   #card b { color: var(--accent); }
+  #cardNote { font-size: .62em; font-weight: 700; color: var(--accent); }
+  #cardNote:empty { display: none; }
+  #card.light #cardNote { filter: brightness(.6); }
   #card .nth { font-size: .75em; opacity: .7; font-variant-numeric: tabular-nums; }
   #card .ic { width: .85em; height: .85em; vertical-align: -.08em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
   #card.light b { filter: brightness(.6); }
@@ -47,7 +50,7 @@
 </head>
 <body>
 <div id="status">connecting…</div>
-<div id="card"><img id="cardImg" alt="" referrerpolicy="no-referrer"><div id="cardHead"></div><p id="cardText"></p><i id="cardBar"></i></div>
+<div id="card"><img id="cardImg" alt="" referrerpolicy="no-referrer"><div id="cardNote"></div><div id="cardHead"></div><p id="cardText"></p><i id="cardBar"></i></div>
 <script>
   // ?debug=1 shows the connection status and the sound being played
   const params = new URLSearchParams(location.search);
@@ -64,7 +67,9 @@
 
   function showCard(item) {
     if (!item.card && !item.image) return;
-    const st = item.style || {};
+    const st = { ...item.style };
+    if (item.note?.kind === 'milestone') { st.size = 'l'; st.anim = 'pop'; } // a round number arrives big
+    document.getElementById('cardNote').textContent = (item.card && item.note?.text) || '';
     card.className = [st.position, st.theme, st.size, st.anim].filter(Boolean).join(' ');
     if (st.accent) card.style.setProperty('--accent', st.accent);
     const img = document.getElementById('cardImg');
@@ -172,6 +177,10 @@
       if (!skipping) await playUrl(item.url, volume * gain, item.maxDuration, item.start, item.end);
     }
     if (item.tts && !skipping) await playUrl(item.tts, volume, 0);
+    if (item.hold && !skipping) { // a sample card: nothing to play, just stay up
+      runBar(item.hold / 1000);
+      await new Promise((done) => { const t = setTimeout(done, item.hold); current = () => { clearTimeout(t); current = null; done(); }; });
+    }
     card.classList.remove('on');
     playing = false;
     playingId = null;

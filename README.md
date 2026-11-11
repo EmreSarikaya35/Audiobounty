@@ -26,7 +26,7 @@ You host it once. Streamers log in with Kick, add their sounds and paste one lin
 - **Text-to-speech rewards.** The viewer types a message when redeeming and it's read aloud on stream, with a banned-word list and a spam filter.
 - **Sound pools and trimming.** Give a reward up to 10 sounds and a random one plays each time; trim any sound to the part you want on a waveform.
 - **Live controls.** See what's playing and what's waiting, remove one, skip the current sound, clear the queue or mute everything.
-- **An on-stream card** shows who redeemed what, with the message being read, in your position, style, size and color, with an optional image or GIF per reward (linked, never stored).
+- **An on-stream card** shows who redeemed what, with the message being read, in your position, style, size and color, with an optional image or GIF per reward (linked, never stored). It counts each viewer's redemptions, marks their first one of the day and round numbers, and its lip fills while the sound plays.
 - **Statistics, a public sound list and backups.** Redemptions and points over 30 days with top rewards and viewers, an optional `/c/<name>` page where viewers can listen to every sound, and a one-file backup you can restore.
 - **One link per streamer.** Each streamer gets a private, unguessable OBS browser source URL that can be regenerated at any time.
 - **Multi-streamer.** One deployment serves any number of channels.
@@ -35,7 +35,7 @@ You host it once. Streamers log in with Kick, add their sounds and paste one lin
 
 ### Screenshots
 
-<img src="docs/dashboard.jpg" alt="AudioBounty dashboard: OBS status, sound reward cards and statistics" width="820">
+<img src="docs/dashboard.jpg" alt="AudioBounty dashboard: the live strip with OBS status and volume, and a pad for every sound reward" width="820">
 
 <img src="docs/gallery.jpg" alt="Screenshots: the on-stream card in OBS, card settings, statistics, the public sound list, the dashboard in light mode and the login page" width="820">
 
@@ -66,7 +66,9 @@ Viewer redeems "sound1" on Kick
 
 - **Add**: name, cost, color on Kick (8 presets or a custom color) and a sound. Turn on **Read the viewer's message aloud** to make it a text-to-speech reward; the sound is then optional.
 - **Attach** a sound to a reward that already exists on Kick.
-- Per reward: **Test** plays it in OBS; tapping the card opens everything else: name, cost and color, its sounds, volume, text-to-speech, pause, an image or GIF link for the on-stream card, and delete.
+- Every reward is a **pad** in its own color. Press the pad to play it in OBS; if OBS isn't connected, **Play anyway** plays it in the browser instead. The ••• key on the pad opens everything else: name, cost and color, its sounds, volume, text-to-speech, pause, an image or GIF link for the on-stream card, the card's own size and entrance, and delete.
+- Each pad shows how many times its reward was redeemed, and the pad whose sound is playing on stream right now stays lit.
+- **Reorder** the pads by dragging one onto another, or with Alt + left/right arrow on a focused pad.
 - **Sound pool**: up to 10 sounds per reward (files or myinstants). With more than one, a random one plays each time, never the same one twice in a row.
 - **Trim**: drag the start and end on the sound's waveform and play the selection before saving. The file isn't changed; OBS plays just that part.
 - **Image or GIF**: paste an https link (Giphy, Tenor, Imgur…). OBS loads it from that site, so it takes no space on the server.
@@ -85,10 +87,18 @@ Search myinstants.com, see trending sounds, listen before choosing and star favo
 - **Spam filter**: messages made of one repeated character (`ğğğğğ`, `-----`, `ğ ğ ğ ğ ğ`), with no letters or digits, or dominated by a single character are not read.
 - Skipped messages show up in **Recent activity** with the reason.
 
+### On-stream card
+
+- Shows the viewer's name, the reward and the message being read, in the position, style, size, entrance and accent color from Settings. A reward can have its own size and entrance.
+- From a viewer's second redemption on, their count on the channel shows next to their name (`×12`).
+- A note sits above the name on a viewer's first redemption of the day, and on their 10th, 25th, 50th, 100th, 250th, 500th and 1000th, when the card also arrives bigger. The note is in the text-to-speech language.
+- The lip along the bottom of the card fills while the sound plays.
+
 ### Live controls
 
 - **Mute all sounds**: nothing plays in OBS; redemptions are still logged. Muting also clears what's queued.
-- **Queue**: while OBS is playing, the status bar shows the current sound and how many are waiting. Tap it to see the list and remove any one of them.
+- **Live strip**: OBS status, what is playing, the master volume, mute and the OBS link sit on one row that stays at the top of the dashboard.
+- **Queue**: while OBS is playing, the strip shows the current sound and how many are waiting. Tap it to see the list and remove any one of them.
 - **Skip current sound** and **Clear queue**.
 
 ### Statistics
@@ -97,7 +107,7 @@ Total redemptions and points spent, a 30-day chart, and the top 10 rewards and v
 
 ### Public sound list
 
-Off by default. When turned on in Settings, `/c/<kick name>` lists the streamer's active rewards with their cost, and anyone can listen to each sound (trimmed as on stream). These pages are added to `sitemap.xml`.
+Off by default. When turned on in Settings, `/c/<kick name>` shows the streamer's active rewards as pads with their cost and how many times each was played; anyone can press a pad to listen (trimmed as on stream) and sort by most played. While it is on, rewards created here say where to listen first in their description on Kick. These pages are added to `sitemap.xml`.
 
 ### Backup and restore
 
@@ -107,11 +117,11 @@ Off by default. When turned on in Settings, `/c/<kick name>` lists the streamer'
 
 | Setting | What it does |
 |---|---|
-| Master volume | Scales every sound |
+| Master volume | Scales every sound (the slider in the live strip) |
 | Max sound length | Cuts sounds after N seconds (0 = no limit) |
 | Even out loudness | Turns down sounds that are much louder than the rest |
 | Show who redeemed it on stream | The on-stream card with the viewer's name and message |
-| Card on stream | Position (top, middle, bottom), dark or light, size and accent color, with a live preview |
+| Card on stream | Position (top, middle, bottom), dark or light, size, entrance (slide, pop, fade) and accent color, with a live preview and a button that shows a sample card in OBS |
 | Public sound list | Turns the `/c/<name>` page on or off |
 | Text-to-speech voice | Turkish or English |
 | Banned words | Comma or line separated |
@@ -120,11 +130,11 @@ Off by default. When turned on in Settings, `/c/<kick name>` lists the streamer'
 
 ### Interface
 
-- Turkish and English, from the button in the header (defaults to the browser's language).
+- Turkish and English, from the language menu in the header (defaults to the browser's language).
 - Automatic, light or dark theme from the theme button in the header, also available before logging in.
 - Long reward lists show the first 6 with **Show all**.
-- Liquid Glass look after [Glisse](https://glisse.kelvinzhang.ca/): a soft coloured backdrop under translucent glass cards, rows, banners and sheets with a specular rim, glass capsule controls that swell, glow and stretch towards the pointer while held, switches you can drag by hand, a floating glass header, menus that grow out of their button, slider and switch thumbs that turn into magnifying lenses while held, and segmented controls whose selection lifts into a lens you can drag to another option. A small script in `public/index.html` draws a displacement map for each glass element and uses it in an SVG filter, so content behind the glass bends at its rim; this needs Chromium, other browsers get frosted glass. To stay light on the GPU, nothing animates in the background, only a few small panes refract, and lenses are only computed while held. Streamers can turn Liquid Glass off in **Settings → Appearance**, which removes every glass filter.
-- Respects the system's reduced motion, reduced transparency and increased contrast settings.
+- A soundboard look: matte surfaces, hairlines and square keys, with color kept for the pads and the signal light. Panels open as a drawer on the right, and as a bottom sheet you can drag away on phones.
+- Respects the system's reduced motion and increased contrast settings.
 
 ### Terms, privacy and cookies
 
@@ -261,7 +271,7 @@ The containers restart automatically after a reboot.
 1. Open `https://alerts.example.com/healthz`. You should see `{"ok":true,"users":0}`.
 2. Open `https://alerts.example.com` and log in with Kick.
 3. The dashboard should show no warning banners. If it says it isn't receiving reward notifications, check the webhook settings from Step 1 and click **Repair**.
-4. Add a sound reward, add the OBS link to OBS and click **Test**. The sound should play in OBS.
+4. Add a sound reward, add the OBS link to OBS and press the reward's pad. The sound should play in OBS.
 5. Redeem the reward on Kick. The sound should play and appear under **Recent activity**.
 6. Add a text-to-speech reward and redeem it with a message. The message should be read in OBS.
 
@@ -390,14 +400,13 @@ server.js                 Everything on the server: HTTP routes, sessions, the K
                           checks, JSON storage, the overlay stream, myinstants and text-to-speech proxies,
                           and the public sound list page (/c/<name>)
 public/index.html         Landing page, streamer dashboard, terms/privacy/cookie texts (/legal)
-                          and the Liquid Glass script
 public/admin.html         Admin panel (/admin)
 public/overlay.html       OBS browser source: queue, on-stream card, text-to-speech
-public/style.css          Shared styles for every page, background images included
+public/style.css          Shared styles for every page
 public/promo.mp4, .jpg    The promo video on the landing page and its poster
 docs/                     README screenshots and the promo clip
 promo-video/              Source of the promo video (Remotion): npm install, then npm run dev or
-                          npx remotion render Promo
+                          npx remotion render Film
 .env.example              Settings template
 Dockerfile                App image
 docker-compose.yml        App + Cloudflare Tunnel
@@ -412,6 +421,7 @@ deploy.sh                 Upload and rebuild from your machine
 - Kick ile giriş yap, ödül adı, bedel ve ses seç: ödül Kick kanalında otomatik oluşur.
 - Kendi ses dosyanı yükle ya da myinstants.com'dan seç; bir ödüle 10'a kadar ses ekleyip rastgele çaldır, sesi dalga formu üzerinde kırp.
 - Tek bir linki OBS'e tarayıcı kaynağı olarak ekle, başka bir şey kurman gerekmez.
+- Her ödül kendi renginde bir pad: basınca çalar, sürükleyerek sıralanır. Yayındaki kart izleyicinin kaçıncı kullanımı olduğunu gösterir.
 - Canlı kuyruk, sessize alma, istatistikler, herkese açık ses listesi, yedekleme ve Türkçe arayüz.
 - Kendi sunucunda çalıştır: tek sunucu sınırsız yayıncıya hizmet verir, resmi Kick API'si kullanılır, hiçbir bağımlılık yoktur.
 

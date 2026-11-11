@@ -1,4 +1,5 @@
 import { Composition, Folder } from "remotion";
+import { Film, FILM_FRAMES } from "./film/Film";
 import { Promo, PROMO_FRAMES } from "./Promo";
 import { Dashboard, DASHBOARD_FRAMES } from "./scenes/Dashboard";
 import { Features, FEATURES_FRAMES } from "./scenes/Features";
@@ -19,6 +20,7 @@ export const RemotionRoot: React.FC = () => (
       <Composition id="Setup" component={Setup} durationInFrames={SETUP_FRAMES} {...base} />
       <Composition id="Finale" component={Finale} durationInFrames={FINALE_FRAMES} {...base} />
     </Folder>
+    <Composition id="Film" component={Film} durationInFrames={FILM_FRAMES} {...base} />
     <Composition id="Promo" component={Promo} durationInFrames={PROMO_FRAMES} {...base} />
   </>
 );

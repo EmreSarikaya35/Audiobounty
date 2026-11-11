@@ -3,7 +3,7 @@ import { ding, whoosh } from "@remotion/sfx";
 import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 import { Kinetic } from "../lib/Kinetic";
 import { pop, settle, track, tw } from "../lib/motion";
-import { Backdrop, C, FONT, Meter, OverlayCard } from "../lib/theme";
+import { Backdrop, C, FONT, Meter, MONO, OverlayCard } from "../lib/theme";
 import { Cam, Obj, World } from "../lib/World";
 
 export const STREAM_FRAMES = 330;
@@ -58,15 +58,8 @@ export const StreamMoment: React.FC = () => {
   return (
     <Backdrop>
       <World cam={cam}>
-        {/* far light planes for depth */}
-        <Obj z={-1400} x={-900} y={-300} o={0.5}>
-          <div style={{ width: 1400, height: 900, background: "radial-gradient(closest-side, rgba(83,252,24,.18), transparent)" }} />
-        </Obj>
-        <Obj z={-900} x={1100} y={400} o={0.4}>
-          <div style={{ width: 1000, height: 700, background: "radial-gradient(closest-side, rgba(10,132,255,.14), transparent)" }} />
-        </Obj>
         <Obj>
-          <div style={{ display: "flex", flexDirection: "column", borderRadius: 30, overflow: "hidden", boxShadow: "0 80px 160px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.1), 0 0 120px rgba(83,252,24,.08)" }}>
+          <div style={{ display: "flex", flexDirection: "column", borderRadius: 22, overflow: "hidden", boxShadow: `0 80px 160px rgba(0,0,0,.7), 0 0 0 1.5px ${C.lineStrong}` }}>
             <div style={{ display: "flex" }}>
               <div style={{ position: "relative", width: VW, height: VH }}>
                 <GameScene f={f} />
@@ -81,9 +74,9 @@ export const StreamMoment: React.FC = () => {
                         position: "absolute",
                         left: VW / 2,
                         top: 92,
-                        width: 330,
-                        height: 110,
-                        borderRadius: 30,
+                        width: 400,
+                        height: 116,
+                        borderRadius: 15,
                         border: `2px solid ${C.accent}`,
                         transform: `translate(-50%, -50%) scale(${1 + r * 1.6})`,
                         opacity: r > 0 && r < 1 ? (1 - r) * 0.6 : 0,
@@ -100,11 +93,11 @@ export const StreamMoment: React.FC = () => {
                     opacity: Math.min(1, drop * 2),
                   }}
                 >
-                  <OverlayCard scale={1.5} />
+                  <OverlayCard scale={1.5} progress={tw(f, DROP + 8, DROP + 190, 0, 1, (t) => t)} />
                 </div>
               </div>
               {/* Kick-style chat */}
-              <div style={{ width: 360, height: VH, background: "#0e0f11", fontFamily: FONT, padding: 22, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 14, overflow: "hidden", borderLeft: "1px solid rgba(255,255,255,.06)" }}>
+              <div style={{ width: 360, height: VH, background: C.bg, fontFamily: FONT, padding: 22, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 14, overflow: "hidden", borderLeft: "1px solid rgba(255,255,255,.06)" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14, transform: `translateY(${(1 - msg) * 96}px)` }}>
                   {CHAT.map(([u, t]) => (
                     <div key={u} style={{ fontSize: 21, color: "rgba(235,235,245,.85)" }}>
@@ -115,9 +108,9 @@ export const StreamMoment: React.FC = () => {
                     style={{
                       fontSize: 21,
                       padding: "12px 14px",
-                      borderRadius: 12,
+                      borderRadius: 8,
                       background: "rgba(83,252,24,.1)",
-                      boxShadow: `inset 3px 0 0 ${C.accent}`,
+                      boxShadow: `inset 0 0 0 1.5px rgba(83,252,24,.35)`,
                       opacity: msg,
                       transform: `scale(${0.92 + msg * 0.08})`,
                     }}
@@ -128,11 +121,11 @@ export const StreamMoment: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div style={{ height: 64, display: "flex", alignItems: "center", gap: 18, padding: "0 26px", background: "#16181b", fontFamily: FONT, fontSize: 21, color: C.muted }}>
+            <div style={{ height: 64, display: "flex", alignItems: "center", gap: 18, padding: "0 26px", background: C.surface, fontFamily: FONT, fontSize: 21, color: C.muted }}>
               <Meter size={22} live={f > DROP} />
-              <span style={{ color: "#fff", fontWeight: 500 }}>AudioBounty</span>
+              <span style={{ color: C.text, fontWeight: 600 }}>AudioBounty</span>
               <span>Browser source</span>
-              <span style={{ marginLeft: "auto", color: f > DROP ? C.accent : C.muted }}>{f > DROP ? "Now playing · Air horn" : "Listening for redemptions"}</span>
+              <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 19, color: f > DROP ? C.accent : C.muted }}>{f > DROP ? "Now playing · Air horn" : "Listening for redemptions"}</span>
             </div>
           </div>
         </Obj>
@@ -143,7 +136,7 @@ export const StreamMoment: React.FC = () => {
       <AbsoluteFill style={{ justifyContent: "flex-end", padding: "0 0 110px 130px" }}>
         <Kinetic text="Your stream plays it." start={160} out={292} size={64} align="left" accent={["plays"]} />
       </AbsoluteFill>
-      <Sequence from={0} durationInFrames={70} layout="none">
+      <Sequence  durationInFrames={70} layout="none">
         <Audio src={whoosh} volume={0.5} />
       </Sequence>
       <Sequence from={DROP} layout="none">

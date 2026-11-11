@@ -378,6 +378,8 @@ const CHANNEL_HTML = `<!doctype html>
   .profile .btn { margin-top: 1.1rem; }
   .reward-head { padding-right: 0; }
   .meta { color: var(--muted); font-size: .8125rem; }
+  .sortbar { display: flex; justify-content: flex-end; min-height: 2.25rem; margin-bottom: .5rem; }
+  #sort[aria-pressed="true"] { color: var(--accent-text); background: var(--accent-soft); }
   .made { display: block; text-align: center; margin-top: 2rem; color: var(--muted); font-size: .8125rem; }
 </style>
 </head>
@@ -392,6 +394,7 @@ const CHANNEL_HTML = `<!doctype html>
     <p id="lead" style="--i:2">Sounds you can play on stream with channel points.</p>
     <a class="btn primary" id="watch" style="--i:3" href="https://kick.com/%NAME%" rel="noopener">Watch on Kick</a>
   </div>
+  <div class="sortbar"><button class="ghost small" type="button" id="sort" aria-pressed="false" hidden></button></div>
   <div class="reward-grid" id="list"></div>
   <a class="made" href="/" id="made">Make your own sound list with AudioBounty</a>
   <nav class="legal-links" style="font-size:.8125rem"><a href="/legal#privacy" id="lPrivacy">Gizlilik</a><a href="/legal#cookies" id="lCookies">Çerezler</a></nav>
@@ -419,18 +422,35 @@ const CHANNEL_HTML = `<!doctype html>
   const PLAY = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
   const STOP = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
   const list = document.getElementById('list');
-  list.innerHTML = data.rewards.length
-    ? data.rewards.map((r, i) => {
-        const meta = [r.sounds.length > 1 ? T(\`\${r.sounds.length} sounds, one at random\`, \`\${r.sounds.length} ses, rastgele biri\`) : '', r.tts ? T('Reads your message aloud', 'Mesajını sesli okur') : ''].filter(Boolean).join(' · ');
-        return \`<article class="reward enter" style="--c:\${esc(r.color || 'var(--muted)')};--i:\${Math.min(i, 12)}">
-          <button class="reward-main play" type="button" data-i="\${i}" \${r.sounds.length ? '' : 'disabled'} title="\${esc(T('Listen', 'Dinle'))}">
-            <span class="reward-head"><span class="reward-title">\${esc(r.title)}</span>\${meta ? \`<span class="meta">\${esc(meta)}</span>\` : ''}</span>
-            <span class="reward-cost">\${esc(r.cost)} <small>\${esc(T('points', 'puan'))}</small></span>
-            <span class="reward-play" aria-hidden="true">\${PLAY}</span>
-          </button>
-        </article>\`;
-      }).join('')
-    : \`<p class="empty">\${esc(T('No sounds yet.', 'Henüz ses yok.'))}</p>\`;
+  // The streamer's own order, or the most redeemed first. data-i stays the reward's place in data.rewards.
+  let byCount = false;
+  function draw() {
+    const order = data.rewards.map((_, i) => i);
+    if (byCount) order.sort((a, b) => data.rewards[b].count - data.rewards[a].count);
+    list.innerHTML = order.length
+      ? order.map((i, n) => {
+          const r = data.rewards[i];
+          const meta = [r.sounds.length > 1 ? T(\`\${r.sounds.length} sounds, one at random\`, \`\${r.sounds.length} ses, rastgele biri\`) : '', r.tts ? T('Reads your message aloud', 'Mesajını sesli okur') : ''].filter(Boolean).join(' · ');
+          return \`<article class="reward enter" style="--c:\${esc(r.color || 'var(--muted)')};--i:\${Math.min(n, 12)}">
+            <button class="reward-main play" type="button" data-i="\${i}" \${r.sounds.length ? '' : 'disabled'} title="\${esc(T('Listen', 'Dinle'))}">
+              <span class="reward-head"><span class="reward-title">\${esc(r.title)}</span>\${meta ? \`<span class="meta">\${esc(meta)}</span>\` : ''}</span>
+              <span class="reward-cost">\${esc(r.cost)} <small>\${esc(T('points', 'puan'))}</small>\${r.count ? \`<small class="reward-count" title="\${esc(T('Times played on stream', 'Yayında çalınma sayısı'))}">\${esc(r.count)}×</small>\` : ''}</span>
+              <span class="reward-play" aria-hidden="true">\${PLAY}</span>
+            </button>
+          </article>\`;
+        }).join('')
+      : \`<p class="empty">\${esc(T('No sounds yet.', 'Henüz ses yok.'))}</p>\`;
+  }
+  draw();
+  const sort = document.getElementById('sort');
+  sort.textContent = T('Most played first', 'Önce en çok çalınanlar');
+  sort.hidden = !data.rewards.some((r) => r.count);
+  sort.addEventListener('click', () => {
+    byCount = !byCount;
+    sort.setAttribute('aria-pressed', byCount);
+    stop();
+    draw();
+  });
 
   // One sound at a time, trimmed like it plays on stream; a pool plays one at random.
   let audio = null, btn = null, timer = 0;
@@ -667,8 +687,8 @@ const cardStyle = (user) => ({ position: 'top', theme: 'dark', size: 'm', anim: 
 const sentItems = new Map(); // userId -> Map qid -> { reward, user, text, color }
 const queueState = new Map(); // userId -> { playing, queue, at }, as last reported by an overlay
 
-// nth: how many times this viewer has redeemed on the channel, shown on the card from the second time on.
-function playAlert(user, alert, who, text = '', nth = 0) {
+// extra: what a real redemption adds to the card (nth: this viewer's count on the channel; note: a line above the name).
+function playAlert(user, alert, who, text = '', extra = {}) {
   const sound = pickSound(alert);
   if (!sound && !text) return false;
   const volume = Math.max(0, Math.min(1, (alert.volume ?? 1) * (user.masterVolume ?? 1)));
@@ -688,7 +708,7 @@ function playAlert(user, alert, who, text = '', nth = 0) {
     volume,
     reward: alert.title,
     user: who,
-    nth,
+    ...extra,
     maxDuration: user.maxDuration || 0,
     normalize: Boolean(user.normalize),
     card: user.card !== false,
@@ -702,6 +722,22 @@ function playAlert(user, alert, who, text = '', nth = 0) {
 function rewardDescription(user, tts) {
   const what = tts ? 'Your message is read aloud on stream' : 'Plays a sound on stream';
   return (user.publicPage ? `${what}. Listen first: ${PUBLIC_URL}/c/${encodeURIComponent(user.name || '')}` : what).slice(0, 200);
+}
+
+// A line above the viewer's name on the card: a round number of redemptions, or their first one today.
+const MILESTONES = [10, 25, 50, 100, 250, 500, 1000];
+// shortcut: kept in memory and by UTC day, so a restart forgets who came today; store it per user if that matters
+const seenToday = new Map(); // userId -> { day, names }
+function cardNote(user, who, nth) {
+  if (!who) return null;
+  const tr = user.ttsLang !== 'en';
+  const day = new Date().toISOString().slice(0, 10);
+  let seen = seenToday.get(user.id);
+  if (!seen || seen.day !== day) seenToday.set(user.id, (seen = { day, names: new Set() }));
+  const first = !seen.names.has(who);
+  if (seen.names.size < 5000) seen.names.add(who);
+  if (MILESTONES.includes(nth)) return { kind: 'milestone', text: tr ? `${nth}. kullanım!` : `${nth}th redemption!` };
+  return first ? { kind: 'first', text: tr ? 'Bugün ilk kez' : 'First today' } : null;
 }
 
 function queueView(user) {
@@ -775,7 +811,8 @@ function handleRedemption(evt) {
       text = '';
     }
   }
-  if (!playAlert(user, alert, who, text, (who && user.stats.viewers?.[who]) || 0)) return;
+  const nth = (who && user.stats.viewers?.[who]) || 0;
+  if (!playAlert(user, alert, who, text, { nth, note: cardNote(user, who, nth) })) return;
   ulog(user, `${who || 'Someone'} redeemed "${alert.title}"${overlayCount(user) ? '' : ' (OBS was not connected!)'}`);
 }
 
@@ -1262,6 +1299,26 @@ async function handleApi(req, res, user, p, admin) {
     }
   }
 
+  // The pads in the order the streamer dragged them into; ids that are missing keep their place after the rest.
+  if (p === '/api/alerts/order' && m === 'POST') {
+    const b = await readJson(req);
+    const pos = new Map((Array.isArray(b.ids) ? b.ids : []).map((id, i) => [String(id), i]));
+    user.alerts.sort((x, y) => (pos.get(x.id) ?? Infinity) - (pos.get(y.id) ?? Infinity) || 0);
+    store.save(user);
+    return sendJson(res, 200, meState(user));
+  }
+
+  // A card with no sound, held for a few seconds, to see the card settings in OBS.
+  if (p === '/api/card-test' && m === 'POST') {
+    if (!overlayCount(user)) throw new HttpError(400, 'OBS is not connected. Add the link to OBS as a browser source.');
+    const tr = user.ttsLang !== 'en';
+    sendToOverlays(user, {
+      type: 'play', qid: crypto.randomBytes(6).toString('hex'), url: null, tts: null, hold: 4000, card: true, image: null,
+      reward: tr ? 'Korna' : 'Air horn', user: user.name, nth: 12, text: tr ? 'Selam yayın' : 'Hello stream', style: cardStyle(user),
+    });
+    return sendJson(res, 200, { ok: true });
+  }
+
   if (p === '/api/settings' && m === 'POST') {
     const b = await readJson(req);
     if (b.masterVolume !== undefined) user.masterVolume = validVolume(b.masterVolume);
@@ -1421,7 +1478,7 @@ function publicOwner(name) {
 function channelPage(u) {
   const rewards = u.alerts
     .filter((a) => a.enabled !== false)
-    .map((a) => ({ title: a.title, cost: a.cost, color: a.color || null, tts: Boolean(a.tts), sounds: a.sounds.map((s) => ({ url: `/p/${u.id}/${s.file}`, start: s.start || 0, end: s.end || 0 })) }));
+    .map((a) => ({ title: a.title, cost: a.cost, color: a.color || null, tts: Boolean(a.tts), count: a.count || 0, sounds: a.sounds.map((s) => ({ url: `/p/${u.id}/${s.file}`, start: s.start || 0, end: s.end || 0 })) }));
   const url = `${PUBLIC_URL}/c/${encodeURIComponent(u.name)}`;
   const vars = {
     NAME: escHtml(u.name),

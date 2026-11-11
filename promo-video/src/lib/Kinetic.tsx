@@ -18,7 +18,7 @@ export const Kinetic: React.FC<{
   align?: "left" | "center";
   accent?: string[]; // words drawn in the accent color
   style?: React.CSSProperties;
-}> = ({ text, start, out, size, weight = 600, color = "#fff", by = "word", stagger = 4, align = "center", accent = [], style }) => {
+}> = ({ text, start, out, size, weight = 600, color = "#eef0e8", by = "word", stagger = 4, align = "center", accent = [], style }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const units = by === "word" ? text.split(" ") : [...text];
@@ -51,7 +51,6 @@ export const Kinetic: React.FC<{
               display: "inline-block",
               whiteSpace: "pre",
               color: isAccent ? "#53fc18" : undefined,
-              textShadow: isAccent ? "0 0 40px rgba(83,252,24,.45)" : undefined,
               opacity: Math.min(1, p * 1.6) * (1 - leave),
               transform: `translateY(${(1 - p) * 0.55 - leave * 0.4}em) rotateX(${(1 - p) * -85 + leave * 40}deg)`,
               transformOrigin: "50% 100%",

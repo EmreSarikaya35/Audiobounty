@@ -216,6 +216,8 @@ ul.log li.enter { animation-name: drop; }
   transition: background-color 140ms, box-shadow 140ms, opacity 200ms, transform 80ms;
 }
 .reward.off { opacity: .5; }
+.reward.dragging { opacity: .35; }
+.reward[draggable] { -webkit-user-drag: element; }
 .reward-main {
   display: grid; grid-template: "title title" 1fr "cost play" auto / 1fr auto; align-items: end; gap: .5rem .75rem; width: 100%; min-height: 8.25rem;
   padding: .875rem .875rem 1rem; border-radius: inherit; background: transparent; box-shadow: none; text-align: left; white-space: normal; font-weight: 400;
@@ -321,6 +323,9 @@ footer { text-align: center; color: var(--muted); font-size: .8125rem; margin-to
   transition: transform 280ms cubic-bezier(.2,.9,.3,1), opacity 160ms;
 }
 #toast.show { transform: none; opacity: 1; }
+#toast.act { display: flex; align-items: center; gap: .75rem; padding-right: .5rem; }
+#toast.act.show { pointer-events: auto; }
+#toast.act button { color: var(--text); }
 #toast.err { background: var(--danger); color: #fff; }
 
 /* Panels: a full-screen top-layer dialog holding our own scrim and a drawer on the right (a bottom sheet on phones) */

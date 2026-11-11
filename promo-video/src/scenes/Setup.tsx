@@ -2,110 +2,102 @@ import { Audio } from "@remotion/media";
 import { ding, mouseClick, uiSwitch } from "@remotion/sfx";
 import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 import { Kinetic } from "../lib/Kinetic";
-import { pop, settle, track, tw } from "../lib/motion";
-import { Backdrop, C, FONT, glass, Icon, MONO, OverlayCard, StatusChip } from "../lib/theme";
+import { EASE_IN_OUT, mix, pop, track, tw } from "../lib/motion";
+import { Backdrop, C, Cursor, Icon, Key, MONO, panel, StatusLed } from "../lib/theme";
 import { Cam, Obj, World } from "../lib/World";
 
 export const SETUP_FRAMES = 300;
-const COPY = 100;
-const SOURCE = 165;
-const FLIP = 222;
+const COPY = 100; // the streamer presses "Copy OBS link"
+const SOURCE = 165; // the link lands in the OBS browser source
+const FLIP = 222; // the signal light turns green
 
 const URL_TEXT = "https://audio.mrkaffin.com/overlay/";
 
+// The dashboard's live strip on the left, the OBS dialog on the right
+const STRIP = { x: -520, y: -60 };
+const OBS = { x: 520, y: 20 };
+const KEY = { x: STRIP.x + 190, y: STRIP.y + 44 };
+const FIELD = { x: OBS.x - 40, y: OBS.y - 34 };
+
 const cam = (f: number): Cam => ({
-  x: track(f, [[0, -520], [90, 330], [150, 0], [300, 0]]),
-  y: track(f, [[0, 10], [90, 0], [150, 430], [215, 250], [300, 250]]),
-  dolly: track(f, [[0, 620], [90, 460], [150, 120], [215, -260], [300, -170]]),
-  rx: track(f, [[0, 4], [90, 0], [150, -16], [215, -5], [300, -3]]),
-  ry: track(f, [[0, 24], [90, -10], [150, 0], [300, -3]]),
+  x: track(f, [[0, STRIP.x * 0.7], [COPY, STRIP.x * 0.5], [SOURCE + 10, OBS.x * 0.5], [FLIP + 20, 0], [300, 0]]),
+  y: track(f, [[0, 40], [300, -10]]),
+  dolly: track(f, [[0, -500], [COPY, 80], [SOURCE + 10, 80], [FLIP + 20, -90], [300, -40]]),
+  rx: track(f, [[0, 10], [COPY, 3], [300, 2]]),
+  ry: track(f, [[0, 16], [COPY, 6], [SOURCE + 10, -6], [FLIP + 20, 0]]),
 });
 
 export const Setup: React.FC = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const typed = Math.floor(tw(f, 8, 70, 0, URL_TEXT.length + 12, (t) => t));
+  const down = tw(f, COPY - 4, COPY, 0, 1) * tw(f, COPY, COPY + 12, 1, 0);
   const copied = f >= COPY;
-  const press = 1 - tw(f, COPY - 5, COPY, 0, 0.06) + tw(f, COPY, COPY + 12, 0, 0.06);
-  const src = settle(f, fps, SOURCE, 140);
-  const flip = tw(f, FLIP, FLIP + 22, 0, 180);
-  const on = flip >= 90;
-  const burst = tw(f, FLIP + 11, FLIP + 60, 0, 1);
-  const chip = pop(f, fps, 120, 14, 120);
+  const fly = tw(f, COPY + 8, SOURCE, 0, 1, EASE_IN_OUT);
+  const pasted = f >= SOURCE;
+  const on = f >= FLIP;
+  const flip = pop(f, fps, FLIP, 10, 140);
+  const cx = track(f, [[40, STRIP.x - 300], [COPY - 6, KEY.x + 30]], EASE_IN_OUT);
+  const cy = track(f, [[40, STRIP.y + 320], [COPY - 6, KEY.y + 10]], EASE_IN_OUT);
   return (
     <Backdrop>
       <World cam={cam}>
-        {/* status chip: flips over when OBS connects */}
-        <Obj y={-210} z={40} s={chip} o={Math.min(1, chip * 1.5)}>
-          <div style={{ transform: `rotateX(${flip}deg)`, transformStyle: "preserve-3d" }}>
-            <div style={{ transform: on ? "rotateX(180deg)" : undefined }}>
-              <StatusChip on={on} size={40} />
+        {/* the dashboard's live strip */}
+        <Obj x={STRIP.x} y={STRIP.y} o={tw(f, 0, 20, 0, 1)}>
+          <div style={{ ...panel(20), width: 760, padding: "30px 32px", display: "flex", flexDirection: "column", gap: 26 }}>
+            <div style={{ scale: String(on ? 0.9 + 0.1 * flip : 1), transformOrigin: "0 50%" }}>
+              <StatusLed on={on} size={34} />
+            </div>
+            <div style={{ display: "flex", gap: 14 }}>
+              <Key primary={!on} size={26} down={down}>
+                {copied ? <Icon name="check" size={26} width={2.6} /> : <Icon name="link" size={26} width={2} />}
+                {copied ? "Copied" : "Copy OBS link"}
+              </Key>
+              <Key size={26}>Mute</Key>
             </div>
           </div>
         </Obj>
-        <Obj y={-210} z={20} s={1 + burst * 3} o={burst > 0 && burst < 1 ? (1 - burst) * 0.7 : 0}>
-          <div style={{ width: 460, height: 90, borderRadius: 45, border: `3px solid ${C.accent}` }} />
-        </Obj>
-        {/* the personal OBS link */}
-        <Obj>
-          <div style={{ ...glass(999), display: "flex", alignItems: "center", gap: 24, padding: "18px 18px 18px 40px", width: 1360 }}>
-            <span style={{ color: C.muted }}>
-              <Icon name="link" size={34} />
-            </span>
-            <span style={{ fontFamily: MONO, fontSize: 34, marginRight: "auto", whiteSpace: "pre" }}>
-              {URL_TEXT.slice(0, typed)}
-              <span style={{ color: C.muted }}>{"•".repeat(Math.max(0, typed - URL_TEXT.length))}</span>
-              <span style={{ opacity: Math.floor(f / 18) % 2 && typed < URL_TEXT.length + 12 ? 1 : 0, color: C.accent }}>|</span>
-            </span>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                fontSize: 30,
-                fontWeight: 600,
-                padding: "20px 38px",
-                borderRadius: 999,
-                transform: `scale(${press})`,
-                background: copied ? C.accent : "rgba(70,70,70,.62)",
-                color: copied ? C.accentInk : C.text,
-                boxShadow: copied ? `0 0 50px ${C.accent}66` : `inset 0 1px 0 ${C.rim}`,
-              }}
-            >
-              {copied ? <Icon name="check" size={30} width={2.6} /> : null}
-              {copied ? "Copied" : "Copy OBS link"}
-            </div>
-          </div>
-        </Obj>
-        {/* an OBS window below */}
-        <Obj y={560} z={-60} rx={4}>
-          <div style={{ width: 1360, height: 470, borderRadius: 22, overflow: "hidden", background: "#1d1f24", boxShadow: "0 60px 140px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08)", fontFamily: FONT }}>
-            <div style={{ height: 50, display: "flex", alignItems: "center", gap: 10, padding: "0 20px", background: "#2a2c33", fontSize: 20, color: C.muted }}>
-              {["#ff5f57", "#febc2e", "#28c840"].map((c) => (
-                <div key={c} style={{ width: 14, height: 14, borderRadius: 7, background: c }} />
-              ))}
-              <span style={{ marginLeft: 16 }}>OBS Studio</span>
-            </div>
-            <div style={{ display: "flex", gap: 20, padding: 20 }}>
-              <div style={{ position: "relative", width: 700, height: 380, borderRadius: 10, background: "linear-gradient(160deg, #2b3440, #151a20 55%, #101311)", overflow: "hidden" }}>
-                <div style={{ position: "absolute", left: "50%", top: 24, transform: `translateX(-50%) scale(${0.9 + src * 0.1})`, opacity: on ? 1 : 0 }}>
-                  <OverlayCard scale={0.95} />
-                </div>
+        {/* OBS: properties of a browser source */}
+        <Obj x={OBS.x} y={OBS.y} o={tw(f, 20, 44, 0, 1)}>
+          <div style={{ ...panel(16), width: 820, overflow: "hidden", background: "#1d1f26", boxShadow: "inset 0 0 0 1.5px #343844, 0 40px 90px rgba(0,0,0,.5)" }}>
+            <div style={{ height: 58, display: "flex", alignItems: "center", padding: "0 24px", fontSize: 22, color: "#c9cdd6", background: "#272a33" }}>Properties for 'Browser'</div>
+            <div style={{ padding: "28px 30px 30px", display: "grid", gridTemplateColumns: "110px 1fr", rowGap: 18, columnGap: 18, alignItems: "center", fontSize: 22, color: "#9aa0ad" }}>
+              <span>URL</span>
+              <div
+                style={{
+                  height: 56,
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 16px",
+                  borderRadius: 6,
+                  fontFamily: MONO,
+                  fontSize: 21,
+                  color: "#fff",
+                  background: "#14161b",
+                  boxShadow: `inset 0 0 0 2px ${pasted ? C.accent : "#343844"}`,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                }}
+              >
+                {pasted ? `${URL_TEXT}••••••••` : ""}
               </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ fontSize: 20, color: C.muted, marginBottom: 6 }}>Sources</div>
-                <div style={{ transform: `translateY(${(1 - src) * -40}px)`, opacity: src, display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 10, fontSize: 24, background: "rgba(83,252,24,.12)", boxShadow: `inset 0 0 0 1.5px ${C.accent}` }}>
-                  <Icon name="link" size={24} color={C.accent} /> AudioBounty
-                  <span style={{ marginLeft: "auto", fontSize: 18, color: C.muted }}>Browser</span>
-                </div>
-                {["Webcam", "Game capture", "Mic / Aux"].map((s) => (
-                  <div key={s} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 10, fontSize: 24, background: "rgba(255,255,255,.04)", color: "rgba(235,235,245,.8)", transform: `translateY(${(1 - src) * -60}px)` }}>
-                    {s}
-                  </div>
-                ))}
-              </div>
+              <span>Width</span>
+              <div style={{ height: 50, width: 180, display: "flex", alignItems: "center", padding: "0 16px", borderRadius: 6, fontFamily: MONO, color: "#fff", background: "#14161b", boxShadow: "inset 0 0 0 2px #343844" }}>1920</div>
+              <span>Height</span>
+              <div style={{ height: 50, width: 180, display: "flex", alignItems: "center", padding: "0 16px", borderRadius: 6, fontFamily: MONO, color: "#fff", background: "#14161b", boxShadow: "inset 0 0 0 2px #343844" }}>1080</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", padding: "0 30px 26px" }}>
+              <div style={{ fontSize: 22, color: "#fff", padding: "10px 36px", borderRadius: 6, background: pasted ? "#3b5bdb" : "#343844" }}>OK</div>
             </div>
           </div>
+        </Obj>
+        {/* the copied link travels from the key to the URL field */}
+        <Obj x={mix(KEY.x, FIELD.x, fly)} y={mix(KEY.y, FIELD.y, fly) - Math.sin(Math.PI * fly) * 150} z={70} o={fly > 0 && fly < 1 ? 1 : 0} s={1 - 0.2 * fly}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: MONO, fontSize: 24, color: C.accentInk, background: C.accent, padding: "10px 18px", borderRadius: 10, whiteSpace: "nowrap" }}>
+            <Icon name="link" size={24} width={2.2} /> /overlay/••••
+          </div>
+        </Obj>
+        <Obj x={cx} y={cy} z={80} o={tw(f, 40, 56, 0, 1) * tw(f, COPY + 20, COPY + 40, 1, 0)} s={1 - down * 0.12}>
+          <Cursor />
         </Obj>
       </World>
       <AbsoluteFill style={{ justifyContent: "flex-end", padding: "0 0 110px 130px" }}>
@@ -117,10 +109,10 @@ export const Setup: React.FC = () => {
       <Sequence from={COPY - 3} durationInFrames={30} layout="none">
         <Audio src={mouseClick} />
       </Sequence>
-      <Sequence from={COPY + 2} layout="none">
+      <Sequence from={SOURCE} layout="none">
         <Audio src={ding} volume={0.4} />
       </Sequence>
-      <Sequence from={FLIP + 8} durationInFrames={40} layout="none">
+      <Sequence from={FLIP} durationInFrames={40} layout="none">
         <Audio src={uiSwitch} volume={0.5} />
       </Sequence>
     </Backdrop>
