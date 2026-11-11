@@ -152,6 +152,11 @@
           <span class="np-count" id="queueCount"></span>
           <span class="chev" aria-hidden="true">›</span>
         </button>
+        <label class="strip-vol" data-i18n-title="Master volume">
+          <svg class="i" aria-hidden="true"><use href="#i-sound"/></svg>
+          <input id="masterVolume" type="range" min="0" max="1" step="0.05" data-i18n-label="Master volume">
+          <span id="masterVal"></span>
+        </label>
         <div class="status-actions">
           <button class="primary" id="copyOverlay" data-i18n>Copy OBS link</button>
           <button id="muteBtn" aria-pressed="false"></button>
@@ -620,6 +625,14 @@
         </div>
         <p class="hint" data-i18n>Paste an image or GIF link (Giphy, Tenor, Imgur…). It shows on the card in OBS. Nothing is uploaded.</p>
       </div>
+      <h3 class="group-title" data-i18n>Card on stream</h3>
+      <div class="group">
+        <div class="inline-field"><label for="editCardSize" data-i18n>Size</label>
+          <select id="editCardSize" data-card-own="size"><option value="" data-i18n>Same as settings</option><option value="s">S</option><option value="m">M</option><option value="l">L</option></select></div>
+        <div class="inline-field"><label for="editCardAnim" data-i18n>Entrance</label>
+          <select id="editCardAnim" data-card-own="anim"><option value="" data-i18n>Same as settings</option><option value="slide" data-i18n>Slide</option><option value="pop" data-i18n>Pop</option><option value="fade" data-i18n>Fade</option></select></div>
+        <p class="hint" data-i18n>Make a pricey reward stand out with a bigger card or its own entrance.</p>
+      </div>
       <div class="row">
         <button class="small" type="button" id="editTest" data-i18n>Test in OBS</button>
         <button class="small ghost danger" type="button" id="editDelete" data-i18n>Delete reward</button>
@@ -639,10 +652,6 @@
     <div class="sheet-body">
       <h3 class="group-title" data-i18n>Sound</h3>
       <div class="group">
-        <div class="field">
-          <label for="masterVolume"><span data-i18n>Master volume</span>: <span id="masterVal"></span></label>
-          <input id="masterVolume" type="range" min="0" max="1" step="0.05">
-        </div>
         <div class="field inline-field">
           <label for="maxDuration" data-i18n>Max sound length (seconds)</label>
           <input id="maxDuration" type="number" min="0" max="60" step="1" data-setting="maxDuration">
@@ -664,6 +673,8 @@
           <div class="seg" role="group" data-card="theme"><button type="button" data-v="dark" data-i18n>Dark</button><button type="button" data-v="light" data-i18n>Light</button></div></div>
         <div class="inline-field"><span class="field-label" data-i18n>Size</span>
           <div class="seg" role="group" data-card="size"><button type="button" data-v="s">S</button><button type="button" data-v="m">M</button><button type="button" data-v="l">L</button></div></div>
+        <div class="inline-field"><span class="field-label" data-i18n>Entrance</span>
+          <div class="seg" role="group" data-card="anim"><button type="button" data-v="slide" data-i18n>Slide</button><button type="button" data-v="pop" data-i18n>Pop</button><button type="button" data-v="fade" data-i18n>Fade</button></div></div>
         <div class="field">
           <span class="field-label" id="cardColorLabel" data-i18n>Accent color</span>
           <div class="swatches" role="radiogroup" aria-labelledby="cardColorLabel" id="cardSwatches"></div>
@@ -868,6 +879,9 @@
     "Air horn": "Korna",
     "Hello stream": "Selam yayın",
     "Position": "Konum",
+    "Same as settings": "Ayarlardaki gibi",
+    "Make a pricey reward stand out with a bigger card or its own entrance.": "Pahalı bir ödülü daha büyük bir kartla ya da kendi girişiyle öne çıkar.",
+    "Entrance": "Giriş", "Slide": "Kayarak", "Pop": "Büyüyerek", "Fade": "Belirerek",
     "Top": "Üst", "Middle": "Orta", "Bottom": "Alt",
     "Style": "Görünüm",
     "Size": "Boyut",
@@ -1174,18 +1188,36 @@
     document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); });
     document.querySelectorAll('[data-i18n-label]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.i18nLabel)); });
     document.querySelectorAll('.file-pick:not(.has) .btn').forEach((el) => { el.textContent = t('Choose file…'); });
-    document.querySelectorAll('.lang-btn').forEach((el) => { el.textContent = lang === 'tr' ? 'English' : 'Türkçe'; });
+    document.querySelectorAll('.lang-btn').forEach((el) => { el.innerHTML = GLOBE + lang.toUpperCase(); });
+    document.querySelectorAll('[data-set-lang]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.setLang === lang)));
     document.querySelectorAll('a[data-doc]').forEach((el) => { el.href = `/legal#${el.dataset.doc}${lang === 'en' ? '-en' : ''}`; });
     document.querySelectorAll('.legal-nav a').forEach((a) => { a.textContent = a.dataset[lang]; a.href = '#' + a.getAttribute('href').slice(1).replace(/-en$/, '') + (lang === 'en' ? '-en' : ''); });
     syncTheme();
     $('newSwatches').innerHTML = swatchesHtml('newColor', $('newSwatches').firstChild ? swatchValue($('newSwatches')) : DEFAULT_COLOR);
     if (me) render(me, true);
   }
-  document.querySelectorAll('.lang-btn').forEach((el) => el.addEventListener('click', () => {
-    lang = lang === 'tr' ? 'en' : 'tr';
-    savePref('lang', lang);
-    applyLang();
-  }));
+  // Language menu: each .lang-btn opens a list of languages. It is built here so the markup stays one plain button
+  // (the one on /legal sits inside the block whose text versions the terms).
+  const GLOBE = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/></svg>';
+  for (const btn of document.querySelectorAll('.lang-btn')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'menu-wrap lang-wrap';
+    btn.replaceWith(wrap);
+    btn.dataset.act = 'menu';
+    btn.setAttribute('aria-haspopup', 'menu');
+    btn.setAttribute('aria-expanded', 'false');
+    wrap.append(btn);
+    wrap.insertAdjacentHTML('beforeend', '<div class="menu" role="menu"><button role="menuitemradio" data-set-lang="tr" lang="tr">Türkçe</button><button role="menuitemradio" data-set-lang="en" lang="en">English</button></div>');
+    wrap.querySelector('.menu').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-set-lang]');
+      if (!b) return;
+      closeMenus();
+      lang = b.dataset.setLang;
+      savePref('lang', lang);
+      applyLang();
+    });
+    btn.addEventListener('click', () => toggleMenu(btn));
+  }
 
   function toast(msg, err) {
     const el = $('toast');
@@ -1674,7 +1706,7 @@
       return `<article class="reward${a.enabled === false ? ' off' : ''}${isNew(a) || delay ? ' enter' : ''}" data-id="${a.id}" style="--c:${esc(a.color || 'var(--muted)')}${delay}">
         <button class="reward-main" type="button" data-act="test" title="${esc(t('Test'))}">
           <span class="reward-head"><span class="reward-title">${esc(a.title)}</span>${tags.length ? `<span class="reward-tags">${tags.map((x) => `<span class="tag">${x}</span>`).join('')}</span>` : ''}</span>
-          <span class="reward-cost">${esc(a.cost)} <small>${esc(t('points'))}</small></span>
+          <span class="reward-cost">${esc(a.cost)} <small>${esc(t('points'))}</small>${a.count ? ` <small class="reward-count" title="${esc(t('Redemptions'))}">${esc(a.count)}×</small>` : ''}</span>
           <span class="reward-play" aria-hidden="true">${icon('play')}</span>
         </button>
         <button class="icon ghost reward-edit" type="button" data-act="edit" aria-label="${esc(t('Edit'))}: ${esc(a.title)}">${icon('more')}</button>
@@ -1794,6 +1826,7 @@
       $('editVolVal').textContent = Math.round((a.volume ?? 1) * 100) + '%';
     }
     $('editTts').checked = Boolean(a.tts);
+    for (const sel of document.querySelectorAll('[data-card-own]')) if (document.activeElement !== sel) sel.value = a.card?.[sel.dataset.cardOwn] || '';
     $('editPaused').checked = a.enabled === false;
   }
   function openEdit(id, trigger) {
@@ -1961,6 +1994,9 @@
   $('editVolume').addEventListener('input', (e) => { $('editVolVal').textContent = Math.round(e.target.value * 100) + '%'; });
   $('editVolume').addEventListener('change', (e) => patchEdit({ volume: Number(e.target.value) }).catch((err) => toast(err.message, true)));
   $('editTts').addEventListener('change', (e) => patchEdit({ tts: e.target.checked }).catch((err) => { e.target.checked = !e.target.checked; toast(err.message, true); }));
+  for (const sel of document.querySelectorAll('[data-card-own]')) {
+    sel.addEventListener('change', () => patchEdit({ card: { size: $('editCardSize').value, anim: $('editCardAnim').value } }).catch((err) => toast(err.message, true)));
+  }
   $('editPaused').addEventListener('change', (e) => patchEdit({ enabled: !e.target.checked }).catch((err) => { e.target.checked = !e.target.checked; toast(err.message, true); }));
   $('editTest').addEventListener('click', (e) => busy(e.currentTarget, () => testAlert(editAlert())));
   $('editDelete').addEventListener('click', (e) => {
@@ -2083,6 +2119,9 @@
     pv.className = `card-preview ${cs.position} ${cs.theme} ${cs.size}`;
     pv.style.setProperty('--card-accent', cs.accent);
     pv.classList.toggle('no-name', !me.card);
+    // Picking another entrance plays it once on the preview card.
+    if (renderCardStyle.anim && renderCardStyle.anim !== cs.anim) { pv.firstElementChild.className = 'cp-card'; replay(pv.firstElementChild, 'cp-' + cs.anim); }
+    renderCardStyle.anim = cs.anim;
   }
   // Only the changed field: the server keeps the rest, so quick changes in a row can't undo each other.
   const saveCardStyle = (patch) => api('/api/settings', 'POST', { cardStyle: patch }).then((st) => render(st, false)).catch((err) => toast(err.message, true));

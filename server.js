@@ -660,13 +660,15 @@ function pickSound(alert) {
 const CARD_POSITIONS = ['top', 'center', 'bottom'];
 const CARD_THEMES = ['dark', 'light'];
 const CARD_SIZES = ['s', 'm', 'l'];
-const cardStyle = (user) => ({ position: 'top', theme: 'dark', size: 'm', accent: '#53fc18', ...user.cardStyle });
+const CARD_ANIMS = ['slide', 'pop', 'fade'];
+const cardStyle = (user) => ({ position: 'top', theme: 'dark', size: 'm', anim: 'slide', accent: '#53fc18', ...user.cardStyle });
 
 // What each overlay was told to play, so its queue report (just ids) can be shown in the dashboard.
 const sentItems = new Map(); // userId -> Map qid -> { reward, user, text, color }
 const queueState = new Map(); // userId -> { playing, queue, at }, as last reported by an overlay
 
-function playAlert(user, alert, who, text = '') {
+// nth: how many times this viewer has redeemed on the channel, shown on the card from the second time on.
+function playAlert(user, alert, who, text = '', nth = 0) {
   const sound = pickSound(alert);
   if (!sound && !text) return false;
   const volume = Math.max(0, Math.min(1, (alert.volume ?? 1) * (user.masterVolume ?? 1)));
@@ -686,13 +688,20 @@ function playAlert(user, alert, who, text = '') {
     volume,
     reward: alert.title,
     user: who,
+    nth,
     maxDuration: user.maxDuration || 0,
     normalize: Boolean(user.normalize),
     card: user.card !== false,
     image: alert.image || null,
-    style: cardStyle(user),
+    style: { ...cardStyle(user), ...alert.card }, // a reward can have its own size and entrance
   });
   return true;
+}
+
+// What viewers read under a reward on Kick. With the public sound list on, it says where to hear the sound first.
+function rewardDescription(user, tts) {
+  const what = tts ? 'Your message is read aloud on stream' : 'Plays a sound on stream';
+  return (user.publicPage ? `${what}. Listen first: ${PUBLIC_URL}/c/${encodeURIComponent(user.name || '')}` : what).slice(0, 200);
 }
 
 function queueView(user) {
@@ -766,7 +775,7 @@ function handleRedemption(evt) {
       text = '';
     }
   }
-  if (!playAlert(user, alert, who, text)) return;
+  if (!playAlert(user, alert, who, text, (who && user.stats.viewers?.[who]) || 0)) return;
   ulog(user, `${who || 'Someone'} redeemed "${alert.title}"${overlayCount(user) ? '' : ' (OBS was not connected!)'}`);
 }
 
@@ -1143,7 +1152,7 @@ async function handleApi(req, res, user, p, admin) {
       const reward = await kick.createReward(user, {
         title,
         cost,
-        description: tts ? 'Your message is read aloud on stream' : 'Plays a sound on stream',
+        description: rewardDescription(user, tts),
         is_user_input_required: tts,
         should_redemptions_skip_request_queue: true,
         ...(color && { background_color: color }),
@@ -1229,6 +1238,11 @@ async function handleApi(req, res, user, p, admin) {
         if (kickFields.background_color) alert.color = kickFields.background_color;
       }
       if (b.volume !== undefined) alert.volume = validVolume(b.volume);
+      if (b.card !== undefined) { // empty means "same as settings"
+        alert.card = {};
+        if (CARD_SIZES.includes(b.card?.size)) alert.card.size = b.card.size;
+        if (CARD_ANIMS.includes(b.card?.anim)) alert.card.anim = b.card.anim;
+      }
       if (b.image !== undefined) {
         const image = await resolveImage(b.image);
         if (!user.alerts.includes(alert)) throw new HttpError(404, 'Reward not found');
@@ -1261,7 +1275,13 @@ async function handleApi(req, res, user, p, admin) {
     if (b.card !== undefined) user.card = Boolean(b.card);
     if (b.ttsLang !== undefined && TTS_LANGS.includes(b.ttsLang)) user.ttsLang = b.ttsLang;
     if (b.bannedWords !== undefined) user.bannedWords = parseWordList(b.bannedWords);
-    if (b.publicPage !== undefined) user.publicPage = Boolean(b.publicPage);
+    if (b.publicPage !== undefined && Boolean(b.publicPage) !== Boolean(user.publicPage)) {
+      user.publicPage = Boolean(b.publicPage);
+      // The rewards made here carry the list's address in their description; keep them in step, without making the switch wait.
+      for (const a of user.alerts.filter((x) => x.managed && x.rewardId)) {
+        kick.updateReward(user, a.rewardId, { description: rewardDescription(user, a.tts) }).catch((e) => console.error(`Description update failed (${user.name}, ${a.title}): ${e.message}`));
+      }
+    }
     if (Array.isArray(b.favorites)) {
       user.miFavorites = b.favorites.slice(0, 50).flatMap((f) => {
         try { return [{ url: myInstantsUrl(f?.url).href, title: String(f.title || '').trim().slice(0, 100) || 'Sound' }]; } catch { return []; }
@@ -1273,6 +1293,7 @@ async function handleApi(req, res, user, p, admin) {
         position: CARD_POSITIONS.includes(c.position) ? c.position : cur.position,
         theme: CARD_THEMES.includes(c.theme) ? c.theme : cur.theme,
         size: CARD_SIZES.includes(c.size) ? c.size : cur.size,
+        anim: CARD_ANIMS.includes(c.anim) ? c.anim : cur.anim,
         accent: validColor(c.accent) || cur.accent,
       };
     }

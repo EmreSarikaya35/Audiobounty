@@ -104,9 +104,10 @@ input.switch:checked::after { transform: translateX(calc(2.75rem - 1.125rem - 6p
 .top-right { justify-content: flex-end; }
 .wordmark { display: inline-flex; align-items: center; gap: .5rem; margin-right: auto; font-weight: 600; font-size: 1.0625rem; letter-spacing: -.02em; }
 .theme-btn, .icon-btn { width: 2.25rem; padding: 0; }
-.theme-wrap .menu { min-width: 10.5rem; }
-.theme-wrap .menu button[aria-checked="true"] { color: var(--accent-text); font-weight: 500; }
-.theme-wrap .menu button[aria-checked="true"]::after { content: "✓"; margin-left: auto; }
+.theme-wrap .menu, .lang-wrap .menu { min-width: 10.5rem; }
+.menu button[aria-checked="true"] { color: var(--accent-text); font-weight: 500; }
+.menu button[aria-checked="true"]::after { content: "✓"; margin-left: auto; }
+.lang-btn { font-weight: 600; }
 .more { display: flex; margin: .75rem auto 0; color: var(--text); font-weight: 500; }
 header.top img { flex: none; width: 2rem; height: 2rem; border-radius: 6px; background: var(--fill); object-fit: cover; margin-right: .25rem; }
 header.top img:not([src]) { display: none; }
@@ -175,7 +176,11 @@ ul.log li.enter { animation-name: drop; }
 .statusbar { position: sticky; top: .5rem; z-index: 5; padding: .5rem .5rem .5rem .875rem; outline: .5rem solid var(--bg); transition: box-shadow 200ms; }
 .statusbar.is-muted { box-shadow: 0 0 0 1px var(--danger); }
 .status-line { display: flex; align-items: center; gap: .75rem; }
-.status-actions { display: flex; gap: .5rem; align-items: center; margin-left: auto; }
+.status-actions { display: flex; gap: .5rem; align-items: center; }
+/* Master volume: a short fader in the strip, pushed to the right with the keys */
+.strip-vol { display: flex; align-items: center; gap: .5rem; margin: 0 .25rem 0 auto; color: var(--muted); }
+.strip-vol input { width: 7rem; }
+.strip-vol span { width: 2.75rem; font: 500 .8125rem var(--mono); color: var(--text); }
 #muteBtn.muted { background: var(--danger); color: #fff; font-weight: 600; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); }
 :root[data-theme="light"] #muteBtn.muted { color: #fff; }
 /* Now playing: a readout in the strip, only while OBS has something to play */
@@ -224,6 +229,7 @@ ul.log li.enter { animation-name: drop; }
 .reward-title { font-size: 1.0625rem; line-height: 1.25; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .reward-cost { grid-area: cost; font: 500 .9375rem var(--mono); }
 .reward-cost small { font: .75rem system-ui, sans-serif; color: var(--muted); }
+.reward-cost .reward-count { display: block; margin-top: .125rem; font-family: var(--mono); }
 .reward-play { grid-area: play; display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--c); color: #0d0e0c; }
 .reward-play .i { width: .875rem; height: .875rem; fill: currentColor; }
 .reward-edit { position: absolute; top: .375rem; right: .375rem; color: var(--text); }
@@ -336,6 +342,7 @@ dialog.sheet .panel {
 .inline-field { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .inline-field > label, .inline-field > .field-label { margin: 0; color: var(--text); font-size: .9375rem; }
 .inline-field input, .inline-field select { width: 7.5rem; flex: none; }
+.inline-field select[data-card-own] { width: 11rem; }
 label.row-check { justify-content: space-between; }
 .sheet-body > .hint:first-child { margin-top: 0; }
 .hint { margin: -.5rem 0 0; color: var(--muted); font-size: .8125rem; line-height: 1.4; }
@@ -446,6 +453,12 @@ label.row-check { justify-content: space-between; }
 .card-preview.light .cp-card b { filter: brightness(.6); }
 .cp-card p { margin: .15rem 0 0; font-weight: 500; }
 .card-preview.no-name .cp-card { opacity: .35; }
+@keyframes cp-slide { from { opacity: 0; transform: translateY(-12px) scale(.96); } }
+@keyframes cp-pop { from { opacity: 0; transform: scale(.5); } }
+@keyframes cp-fade { from { opacity: 0; } }
+.cp-slide { animation: cp-slide 450ms cubic-bezier(.2,.9,.3,1); }
+.cp-pop { animation: cp-pop 500ms cubic-bezier(.3,1.5,.5,1); }
+.cp-fade { animation: cp-fade 500ms; }
 dialog.sheet .inline-field .seg { flex: none; }
 
 /* Terms, privacy and cookies (/legal) */
@@ -478,6 +491,9 @@ html[lang="tr"] .legal [data-lang="tr"], html[lang="en"] .legal [data-lang="en"]
   .status-line { flex-wrap: wrap; gap: .5rem; }
   .status-line .status { padding-left: .375rem; }
   .now-playing { order: 3; flex-basis: 100%; }
+  .strip-vol { order: 4; flex-basis: 100%; margin: 0; padding: 0 .375rem; }
+  .strip-vol input { flex: 1; width: auto; }
+  .status-actions { margin-left: auto; }
   .status-actions > button { padding-inline: .625rem; }
   .reward-grid { grid-template-columns: 1fr 1fr; gap: .5rem; }
   .reward-main { min-height: 7.5rem; padding: .75rem .75rem .875rem; }
